@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir paho-mqtt prometheus-client
+
+# Copy IoT simulator code
+COPY src/iot_simulator /app/iot_simulator
+
+# Run the simulator
+CMD ["python", "-u", "iot_simulator/node.py"]
