@@ -57,13 +57,22 @@
   - [x] Check Prometheus metrics collection
   - [x] Validate Grafana dashboard displays
 
-- [ ] **Windows-Specific Validation** <!-- id: dev-8 -->
-  - [ ] Test API endpoints (curl/Postman)
-  - [ ] Verify intent parsing accuracy
-  - [ ] Test MQTT device communication
-  - [ ] Monitor Grafana dashboards
-  - [ ] Run full integration test suite
-  - [ ] Document any Windows-specific issues
+- [x] **Windows-Specific Validation** <!-- id: dev-8 -->
+  - [x] Test API endpoints (curl/Postman)
+  - [x] Verify intent parsing accuracy
+  - [x] Test MQTT device communication
+  - [x] Monitor Grafana dashboards
+  - [x] Run full integration test suite
+  - [x] Document any Windows-specific issues
+
+**Windows Validation Notes:**
+
+- All API endpoints responding with 200 OK
+- Intent parsing working correctly (7 intent types)
+- MQTT broker connected and operational
+- Grafana accessible at http://localhost:3000
+- Docker services running (MQTT, Prometheus, Grafana, IoT nodes)
+- **Known Limitation:** Network enforcement (tc/iptables) simulated on Windows - requires Linux for real enforcement
 
 ---
 
