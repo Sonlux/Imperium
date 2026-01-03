@@ -15,6 +15,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from intent_manager.parser import IntentParser
 from policy_engine.engine import PolicyEngine
+from database import DatabaseManager
+from auth import AuthManager, create_default_admin
+from rate_limiter import RateLimiter
+from intent_manager.auth_endpoints import init_auth_endpoints
 
 app = Flask(__name__)
 CORS(app)
@@ -22,14 +26,26 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize security and database components
+db_manager = DatabaseManager(db_path=os.getenv('DATABASE_PATH', 'data/imperium.db'))
+auth_manager = AuthManager(db_manager=db_manager)
+rate_limiter = RateLimiter()
+
+# Create default admin user if not exists
+try:
+    create_default_admin(auth_manager)
+except Exception as e:
+    logger.warning(f"Could not create default admin: {e}")
+
 
 class IntentManager:
     """Manages intent acquisition and validation"""
     
-    def __init__(self):
-        self.intents = []
+    def __init__(self, db_manager=None):
+        self.intents = []  # In-memory cache for backwards compatibility
         self.parser = IntentParser()
         self.policy_engine = PolicyEngine()
+        self.db_manager = db_manager or DatabaseManager()
     
     def submit_intent(self, intent_data):
         """
@@ -72,6 +88,29 @@ class IntentManager:
         }
         
         self.intents.append(intent)
+        
+        # Persist to database
+        try:
+            self.db_manager.add_intent(
+                intent_id=intent_id,
+                original_intent=description,
+                parsed_intent=parsed,
+                status='active'
+            )
+            
+            # Save policies to database
+            for policy in policies:
+                policy_dict = policy.to_dict()
+                self.db_manager.add_policy(
+                    policy_id=policy_dict['id'],
+                    intent_id=intent_id,
+                    policy_type=policy_dict['type'],
+                    parameters=policy_dict['config'],
+                    status='pending'
+                )
+        except Exception as e:
+            logger.warning(f"Failed to persist intent to database: {e}")
+        
         logger.info(f"Intent {intent_id} created with {len(policies)} policies")
         
         return intent
@@ -89,18 +128,32 @@ class IntentManager:
 
 
 # Global intent manager instance
-intent_manager = IntentManager()
+intent_manager = IntentManager(db_manager=db_manager)
+
+# Initialize authentication endpoints
+init_auth_endpoints(app, auth_manager, rate_limiter)
 
 
 @app.route('/health', methods=['GET'])
+@rate_limiter.limit('default')
 def health_check():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'service': 'intent-manager'})
+    return jsonify({
+        'status': 'healthy',
+        'service': 'intent-manager',
+        'features': {
+            'authentication': True,
+            'rate_limiting': True,
+            'database': True
+        }
+    })
 
 
 @app.route('/api/v1/intents', methods=['POST'])
+@rate_limiter.limit('intents')
+@auth_manager.require_auth
 def submit_intent():
-    """Submit a new intent"""
+    """Submit a new intent (requires authentication)"""
     try:
         intent_data = request.get_json()
         
@@ -129,15 +182,37 @@ def submit_intent():
 
 
 @app.route('/api/v1/intents', methods=['GET'])
+@rate_limiter.limit('default')
+@auth_manager.require_auth
 def list_intents():
-    """List all intents"""
+    """List all intents (requires authentication)"""
+    # Try to get from database first
+    try:
+        db_intents = intent_manager.db_manager.get_all_intents(limit=100)
+        if db_intents:
+            return jsonify({'intents': db_intents, 'count': len(db_intents)})
+    except Exception as e:
+        logger.warning(f"Failed to retrieve from database: {e}")
+    
+    # Fall back to in-memory cache
     intents = intent_manager.list_intents()
     return jsonify({'intents': intents, 'count': len(intents)})
 
 
 @app.route('/api/v1/intents/<intent_id>', methods=['GET'])
+@rate_limiter.limit('default')
+@auth_manager.require_auth
 def get_intent(intent_id):
-    """Get specific intent"""
+    """Get specific intent (requires authentication)"""
+    # Try database first
+    try:
+        db_intent = intent_manager.db_manager.get_intent(intent_id)
+        if db_intent:
+            return jsonify({'intent': db_intent})
+    except Exception as e:
+        logger.warning(f"Failed to retrieve from database: {e}")
+    
+    # Fall back to in-memory
     intent = intent_manager.get_intent(intent_id)
     
     if intent:
@@ -147,8 +222,19 @@ def get_intent(intent_id):
 
 
 @app.route('/api/v1/policies', methods=['GET'])
+@rate_limiter.limit('default')
+@auth_manager.require_auth
 def list_policies():
-    """List all generated policies"""
+    """List all generated policies (requires authentication)"""
+    # Try database first
+    try:
+        db_policies = intent_manager.db_manager.get_all_policies(limit=100)
+        if db_policies:
+            return jsonify({'policies': db_policies, 'count': len(db_policies)})
+    except Exception as e:
+        logger.warning(f"Failed to retrieve from database: {e}")
+    
+    # Fall back to in-memory
     policies = intent_manager.policy_engine.get_policies()
     return jsonify({'policies': policies, 'count': len(policies)})
 
