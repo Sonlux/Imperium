@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import jwt
 import bcrypt
 import os
-from database import DatabaseManager
+from src.database import DatabaseManager
 
 
 class AuthManager:
