@@ -5,21 +5,22 @@ Requires=docker.service
 
 [Service]
 Type=simple
-User=pi
-Group=pi
-WorkingDirectory=/home/pi/Imperium
-Environment="PATH=/home/pi/Imperium/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+User=imperium
+Group=imperium
+WorkingDirectory=/home/imperium/Imperium
+Environment="PATH=/home/imperium/Imperium/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONPATH=/home/imperium/Imperium"
 Environment="PYTHONUNBUFFERED=1"
 Environment="FLASK_ENV=production"
-Environment="JWT_SECRET_KEY=CHANGE_THIS_IN_PRODUCTION"
 Environment="NETWORK_INTERFACE=eth0"
 
 # Ensure database directory exists
-ExecStartPre=/bin/mkdir -p /home/pi/Imperium/data
-ExecStartPre=/bin/chown pi:pi /home/pi/Imperium/data
+ExecStartPre=/bin/mkdir -p /home/imperium/Imperium/data
+ExecStartPre=/bin/mkdir -p /var/log/imperium
+ExecStartPre=/bin/chown imperium:imperium /home/imperium/Imperium/data
 
 # Start the Imperium controller
-ExecStart=/home/pi/Imperium/venv/bin/python3 /home/pi/Imperium/src/main.py
+ExecStart=/home/imperium/Imperium/venv/bin/python3 /home/imperium/Imperium/src/main.py
 
 # Restart policy
 Restart=always
@@ -32,8 +33,9 @@ NoNewPrivileges=false
 PrivateTmp=true
 
 # Logging
-StandardOutput=append:/var/log/imperium/controller.log
-StandardError=append:/var/log/imperium/controller-error.log
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=imperium
 
 # Resource limits
 MemoryLimit=512M
