@@ -14,10 +14,11 @@ Environment="PYTHONUNBUFFERED=1"
 Environment="FLASK_ENV=production"
 Environment="NETWORK_INTERFACE=eth0"
 
-# Ensure database directory exists
+# Ensure database and log directories exist
 ExecStartPre=/bin/mkdir -p /home/imperium/Imperium/data
-ExecStartPre=/bin/mkdir -p /var/log/imperium
-ExecStartPre=/bin/chown imperium:imperium /home/imperium/Imperium/data
+ExecStartPre=/bin/mkdir -p /home/imperium/Imperium/logs
+ExecStartPre=/bin/chown -R imperium:imperium /home/imperium/Imperium/data
+ExecStartPre=/bin/chown -R imperium:imperium /home/imperium/Imperium/logs
 
 # Start the Imperium controller
 ExecStart=/home/imperium/Imperium/venv/bin/python3 /home/imperium/Imperium/src/main.py
