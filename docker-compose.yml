@@ -42,19 +42,19 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     restart: unless-stopped
 
-  # IoT Node Simulator (Example)
-  iot-node-1:
+  # IoT Node Simulator (Scalable)
+  iot-node:
     build:
       context: .
       dockerfile: Dockerfile.iot-node
-    container_name: imperium-iot-node-1
     environment:
-      - NODE_ID=node-1
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=1883
     depends_on:
       - mosquitto
     restart: unless-stopped
+    deploy:
+      replicas: 1
 
 volumes:
   mqtt-data:

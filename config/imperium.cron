@@ -1,0 +1,21 @@
+# Imperium IBN Framework - Cron Jobs
+# Install: sudo cp config/imperium.cron /etc/cron.d/imperium
+# Or manually add to crontab: crontab -e
+
+# Environment
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+IMPERIUM_DIR=/home/imperium/Imperium
+BACKUP_DIR=/home/imperium/Imperium/backups
+
+# Daily backup at 2:00 AM
+0 2 * * * imperium /home/imperium/Imperium/scripts/backup.sh >> /var/log/imperium/backup.log 2>&1
+
+# Health check every 5 minutes (optional - uncomment to enable)
+# */5 * * * * imperium curl -sf http://localhost:5000/health > /dev/null || systemctl restart imperium
+
+# Weekly cleanup of old logs (Sunday 3:00 AM)
+0 3 * * 0 imperium find /var/log/imperium -name "*.log.*" -mtime +30 -delete 2>/dev/null
+
+# Monthly database vacuum (1st of month at 4:00 AM)
+0 4 1 * * imperium sqlite3 /home/imperium/Imperium/data/imperium.db "VACUUM;" 2>/dev/null
