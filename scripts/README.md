@@ -9,6 +9,7 @@ This directory contains utility scripts for managing the Imperium IBN Framework.
 **Purpose:** Generate cryptographically secure secrets for production deployment.
 
 **Features:**
+
 - Interactive wizard mode
 - Automatic generation of all secrets
 - Single key generation
@@ -33,6 +34,7 @@ python scripts/generate_secrets.py --key postgres # POSTGRES_PASSWORD
 ```
 
 **Output Example:**
+
 ```
 API_SECRET_KEY=a1b2c3d4e5f6...64chars...
 JWT_SECRET_KEY=f6e5d4c3b2a1...64chars...
@@ -40,6 +42,7 @@ GRAFANA_ADMIN_PASSWORD=Xy9$mK2...24chars...
 ```
 
 **Security Notes:**
+
 - Uses `secrets.token_hex()` for keys (32 bytes entropy = 64 hex chars)
 - Uses `secrets.choice()` for passwords (24+ chars mixed)
 - Automatically updates `.env` file with proper permissions
@@ -52,6 +55,7 @@ GRAFANA_ADMIN_PASSWORD=Xy9$mK2...24chars...
 **Purpose:** One-command security setup for production deployment.
 
 **What it does:**
+
 1. ✅ Creates `.env` from `.env.example` (if not exists)
 2. ✅ Generates all secrets using Python
 3. ✅ Sets file permissions (`chmod 600 .env`)
@@ -71,6 +75,7 @@ chmod +x scripts/setup_security.sh
 ```
 
 **Output:**
+
 ```
 ======================================================================
 🔐 Imperium Security Setup Wizard
@@ -103,6 +108,7 @@ Step 4: Verify Git Configuration
 ```
 
 **When to use:**
+
 - ✅ First-time production deployment on Raspberry Pi
 - ✅ After cloning repository to new server
 - ✅ When rotating all secrets (emergency or scheduled)
@@ -115,6 +121,7 @@ Step 4: Verify Git Configuration
 **Purpose:** Windows PowerShell version of security setup script.
 
 **What it does:**
+
 - Same as `setup_security.sh` but for Windows
 - PowerShell-native commands
 - Color-coded output
@@ -132,6 +139,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 **When to use:**
+
 - ✅ Setting up development environment on Windows
 - ✅ Testing security configuration before Pi deployment
 - ✅ Generating secrets on Windows for remote deployment
@@ -153,6 +161,7 @@ bash scripts/backup.sh
 **Output:** `backups/imperium_backup_YYYYMMDD_HHMMSS.tar.gz`
 
 **Includes:**
+
 - `data/imperium.db` (SQLite database)
 - `config/*.yaml` (configuration files)
 - `.env.example` (template, NOT actual .env)
@@ -197,6 +206,7 @@ bash scripts/rotate_secrets.sh --dry-run
 ```
 
 **What it does:**
+
 1. ✅ Backs up current `.env`
 2. ✅ Generates new secrets
 3. ✅ Updates `.env` file
@@ -225,6 +235,7 @@ bash scripts/deploy_pi.sh pi@raspberrypi.local --branch production
 ```
 
 **What it does:**
+
 1. ✅ SSH into Pi
 2. ✅ Pull latest code from git
 3. ✅ Update dependencies
@@ -245,6 +256,7 @@ bash scripts/health_check.sh
 ```
 
 **Checks:**
+
 - ✅ Imperium API (port 5000)
 - ✅ MQTT broker (port 1883)
 - ✅ Prometheus (port 9090)
@@ -255,6 +267,7 @@ bash scripts/health_check.sh
 - ✅ CPU/memory usage
 
 **Output:**
+
 ```
 ======================================================================
 Imperium IBN Health Check
@@ -292,6 +305,7 @@ bash scripts/test_api.sh http://raspberrypi.local:5000
 ```
 
 **Tests:**
+
 - ✅ Health endpoint (`/api/health`)
 - ✅ Authentication (`/api/auth/login`)
 - ✅ Intent submission (`/api/intents`)
@@ -312,6 +326,7 @@ bash scripts/test_mqtt.sh
 ```
 
 **Tests:**
+
 - ✅ Broker connection
 - ✅ Publish message
 - ✅ Subscribe to topic
@@ -340,6 +355,7 @@ bash scripts/cleanup.sh --aggressive
 ```
 
 **Removes:**
+
 - ✅ Old log files (>7 days)
 - ✅ Old backups (>30 days)
 - ✅ Python cache files
@@ -359,6 +375,7 @@ bash scripts/update_deps.sh
 ```
 
 **What it does:**
+
 1. ✅ Creates backup of current environment
 2. ✅ Updates pip, setuptools, wheel
 3. ✅ Updates all packages in requirements.txt
