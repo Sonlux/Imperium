@@ -7,12 +7,8 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  - job_name: "imperium-controller"
+  # Scrape Prometheus's own metrics for demo visibility
+  - job_name: "prometheus-internal"
     static_configs:
-      - targets: ["host.docker.internal:8000"]
-    metrics_path: "/metrics"
-
-  - job_name: "iot-nodes"
-    static_configs:
-      - targets: ["iot-node-1:8001"]
+      - targets: ["localhost:9090"]
     metrics_path: "/metrics"

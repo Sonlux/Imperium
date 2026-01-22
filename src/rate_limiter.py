@@ -21,10 +21,10 @@ class RateLimiter:
         
         # Default rate limits (requests per time window)
         self.limits = {
-            'default': {'requests': 100, 'window': 3600},  # 100 requests per hour
-            'auth': {'requests': 10, 'window': 3600},      # 10 requests per hour for auth
-            'intents': {'requests': 50, 'window': 3600},   # 50 intents per hour
-            'high': {'requests': 200, 'window': 3600}      # 200 requests per hour for privileged users
+            'default': {'requests': 1000, 'window': 3600},  # 1000 requests per hour
+            'auth': {'requests': 100, 'window': 3600},      # 100 requests per hour for auth
+            'intents': {'requests': 500, 'window': 3600},   # 500 intents per hour
+            'high': {'requests': 2000, 'window': 3600}      # 2000 requests per hour for privileged users
         }
     
     def get_client_id(self):
