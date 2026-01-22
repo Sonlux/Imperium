@@ -1,6 +1,6 @@
 ﻿# Imperium: Cognitive Edge-Orchestrated Intent-Based Networking
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.13+-green.svg)](https://python.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success.svg)](https://github.com/Sonlux/Imperium)
