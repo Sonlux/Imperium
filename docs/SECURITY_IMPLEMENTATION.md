@@ -13,6 +13,7 @@ This document summarizes the comprehensive security hardening implemented for th
 **Issue:** `.env` file containing production secrets was tracked by git and publicly accessible.
 
 **Resolution:**
+
 - ✅ Removed `.env` from git tracking (`git rm --cached .env`)
 - ✅ Added `.env` to `.gitignore` with multiple patterns:
   ```gitignore
@@ -27,6 +28,7 @@ This document summarizes the comprehensive security hardening implemented for th
 - ✅ Set file permissions to `600` (owner read/write only)
 
 **Verification:**
+
 ```bash
 git check-ignore .env  # Should output: .env
 git ls-files | grep .env  # Should return NO results
@@ -37,6 +39,7 @@ git ls-files | grep .env  # Should return NO results
 **Issue:** SQLite database (`data/imperium.db`) with user credentials was not protected from version control.
 
 **Resolution:**
+
 - ✅ Added database protection to `.gitignore`:
   ```gitignore
   data/
@@ -54,6 +57,7 @@ git ls-files | grep .env  # Should return NO results
 **Issue:** Automated backups in `backups/` directory containing sensitive data were not excluded from git.
 
 **Resolution:**
+
 - ✅ Added backup protection:
   ```gitignore
   backups/
@@ -69,6 +73,7 @@ git ls-files | grep .env  # Should return NO results
 **Issue:** Log files potentially containing sensitive information were not protected.
 
 **Resolution:**
+
 - ✅ Added log protection:
   ```gitignore
   *.log
@@ -81,6 +86,7 @@ git ls-files | grep .env  # Should return NO results
 **Issue:** Certificate files (if generated) could be accidentally committed.
 
 **Resolution:**
+
 - ✅ Added certificate protection:
   ```gitignore
   *.pem
@@ -98,6 +104,7 @@ git ls-files | grep .env  # Should return NO results
 **Issue:** SSH keys could be accidentally added to repository.
 
 **Resolution:**
+
 - ✅ Added SSH key protection:
   ```gitignore
   *.pub
@@ -113,6 +120,7 @@ git ls-files | grep .env  # Should return NO results
 ### Enhanced .env.example Template
 
 **Changes:**
+
 1. **Security Warnings Added:**
    - ⚠️ "NEVER commit .env files with real credentials"
    - ⚠️ "Generate strong secrets using: openssl rand -hex 32"
@@ -146,6 +154,7 @@ git ls-files | grep .env  # Should return NO results
 #### 1. `scripts/generate_secrets.py`
 
 **Features:**
+
 - ✅ Interactive wizard mode
 - ✅ Auto-generation mode
 - ✅ Single key generation mode
@@ -153,6 +162,7 @@ git ls-files | grep .env  # Should return NO results
 - ✅ Cryptographically secure randomness (`secrets` module)
 
 **Usage:**
+
 ```bash
 # Interactive mode
 python scripts/generate_secrets.py
@@ -167,6 +177,7 @@ python scripts/generate_secrets.py --key grafana
 ```
 
 **Generated Secrets:**
+
 - `API_SECRET_KEY`: 64-character hex (32 bytes entropy)
 - `JWT_SECRET_KEY`: 64-character hex (32 bytes entropy)
 - `GRAFANA_ADMIN_PASSWORD`: 24-character mixed (letters, digits, symbols)
@@ -176,6 +187,7 @@ python scripts/generate_secrets.py --key grafana
 #### 2. `scripts/setup_security.sh` (Linux/Mac)
 
 Automated security setup script that:
+
 1. ✅ Creates `.env` from `.env.example`
 2. ✅ Generates all secrets using Python
 3. ✅ Sets proper file permissions (`chmod 600 .env`)
@@ -185,6 +197,7 @@ Automated security setup script that:
 #### 3. `scripts/setup_security.ps1` (Windows)
 
 Windows PowerShell equivalent with same functionality:
+
 - ✅ PowerShell-native commands
 - ✅ Color-coded output
 - ✅ Git verification
@@ -245,16 +258,16 @@ Windows PowerShell equivalent with same functionality:
 
 ### Completed ✅
 
-| Item | Status | Details |
-|------|--------|---------|
-| .gitignore updated | ✅ | 30+ sensitive patterns added |
-| .env removed from git | ✅ | `git rm --cached .env` executed |
-| .env.example enhanced | ✅ | Security warnings, placeholders updated |
-| Secret generation script | ✅ | Python tool with 3 modes |
-| Setup scripts created | ✅ | Bash + PowerShell versions |
-| Security checklist | ✅ | 400+ line comprehensive guide |
-| File permissions | ✅ | 600 for secrets, 700 for dirs |
-| Git commit | ✅ | Commit c532b40 with detailed message |
+| Item                     | Status | Details                                 |
+| ------------------------ | ------ | --------------------------------------- |
+| .gitignore updated       | ✅     | 30+ sensitive patterns added            |
+| .env removed from git    | ✅     | `git rm --cached .env` executed         |
+| .env.example enhanced    | ✅     | Security warnings, placeholders updated |
+| Secret generation script | ✅     | Python tool with 3 modes                |
+| Setup scripts created    | ✅     | Bash + PowerShell versions              |
+| Security checklist       | ✅     | 400+ line comprehensive guide           |
+| File permissions         | ✅     | 600 for secrets, 700 for dirs           |
+| Git commit               | ✅     | Commit c532b40 with detailed message    |
 
 ### Validation Commands
 
@@ -393,15 +406,15 @@ EOF
 
 ## 📊 Security Metrics (Before vs. After)
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Secrets in git | 1 (.env tracked) | 0 (properly excluded) | ✅ 100% |
-| Sensitive files protected | 0 | 30+ patterns | ✅ Critical |
-| Secret entropy | Low (hardcoded) | High (cryptographic) | ✅ Critical |
-| File permissions | 644 (readable) | 600 (owner only) | ✅ Secure |
-| Security docs | 1 (basic SECURITY.md) | 3 (comprehensive) | ✅ Enhanced |
-| Setup automation | Manual | Scripted | ✅ Streamlined |
-| Rotation process | Undefined | Documented | ✅ Clear |
+| Metric                    | Before                | After                 | Improvement    |
+| ------------------------- | --------------------- | --------------------- | -------------- |
+| Secrets in git            | 1 (.env tracked)      | 0 (properly excluded) | ✅ 100%        |
+| Sensitive files protected | 0                     | 30+ patterns          | ✅ Critical    |
+| Secret entropy            | Low (hardcoded)       | High (cryptographic)  | ✅ Critical    |
+| File permissions          | 644 (readable)        | 600 (owner only)      | ✅ Secure      |
+| Security docs             | 1 (basic SECURITY.md) | 3 (comprehensive)     | ✅ Enhanced    |
+| Setup automation          | Manual                | Scripted              | ✅ Streamlined |
+| Rotation process          | Undefined             | Documented            | ✅ Clear       |
 
 ---
 
@@ -425,9 +438,10 @@ For academic projects, the following security practices are now documented:
 **Date:** 2026-01-21  
 **Files Changed:** 7  
 **Insertions:** 1,131  
-**Deletions:** 116  
+**Deletions:** 116
 
 **Files Modified/Created:**
+
 - ✅ `.gitignore` (updated with 30+ patterns)
 - ✅ `.env.example` (enhanced with security warnings)
 - ✅ `.env` (removed from git tracking)
@@ -466,11 +480,12 @@ For academic projects, the following security practices are now documented:
 **Security Audit:** PASSED  
 **Implementation:** COMPLETE  
 **Validation:** VERIFIED  
-**Documentation:** COMPREHENSIVE  
+**Documentation:** COMPREHENSIVE
 
 All critical security issues have been resolved. The Imperium IBN Framework is now ready for secure production deployment.
 
 **Next Recommended Steps:**
+
 1. Enable MQTT TLS/SSL (see SECURITY_CHECKLIST.md)
 2. Configure firewall on Raspberry Pi
 3. Set up Grafana email alerts
