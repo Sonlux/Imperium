@@ -40,6 +40,36 @@ devices:
       min_latency: "100ms"
     location: "storage-B-2"
 
+  # Audio Sensors
+  esp32-audio-1:
+    type: audio_sensor
+    description: "ESP32 with I2S microphone - Audio capture node"
+    capabilities:
+      - mqtt
+      - audio_stream
+      - prometheus_metrics
+      - policy_control
+    qos_profile: high_priority
+    priority_level: 8
+    default_sampling_rate: 16000 # Hz (audio sample rate)
+    mqtt_topics:
+      audio: "iot/esp32-audio-1/audio"
+      telemetry: "iot/esp32-audio-1/telemetry"
+      control: "iot/esp32-audio-1/control"
+      status: "iot/esp32-audio-1/status"
+      metadata: "iot/esp32-audio-1/metadata"
+    network:
+      ip_address: "10.218.189.218"
+      max_bandwidth: "500kbps"
+      min_latency: "100ms"
+      metrics_port: 8080
+    audio_config:
+      channels: 1
+      bits_per_sample: 16
+      frame_size: 480 # samples per frame
+      buffer_count: 4
+    location: "raspberry-pi-network"
+
   # Cameras
   camera-1:
     type: camera

@@ -34,3 +34,13 @@ scrape_configs:
         regex: 'imperium-iot-node-(\d+):.*'
         target_label: node_number
         replacement: '${1}'
+
+  # ESP32 Audio Node - Physical hardware
+  - job_name: "esp32-audio"
+    static_configs:
+      - targets:
+          - "10.218.189.218:8080"
+        labels:
+          device_id: "esp32-audio-1"
+          type: "audio_sensor"
+          group: "hardware-nodes"

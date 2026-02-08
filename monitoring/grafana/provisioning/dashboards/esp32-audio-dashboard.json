@@ -1,0 +1,175 @@
+{
+  "dashboard": {
+    "title": "ESP32 Audio Node - Real-time Monitoring",
+    "tags": ["esp32", "audio", "iot"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Audio Frames Captured",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "audio_frames_captured_total{device=\"esp32-audio-1\"}",
+            "legendFormat": "Total Frames",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Frames"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "pointradius": 2,
+        "points": false,
+        "stack": false
+      },
+      {
+        "id": 2,
+        "title": "Audio RMS Level (dB)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "audio_rms_level_db{device=\"esp32-audio-1\"}",
+            "legendFormat": "RMS Level",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "dB", "label": "Amplitude"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "thresholds": [
+          {"value": -30, "colorMode": "critical", "fill": true, "line": true}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Sample Rate",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "audio_sample_rate_hz{device=\"esp32-audio-1\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value",
+          "unit": "hertz"
+        }
+      },
+      {
+        "id": 4,
+        "title": "MQTT QoS Level",
+        "type": "stat",
+        "gridPos": {"x": 6, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "mqtt_qos_level{device=\"esp32-audio-1\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Buffer Overruns",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "audio_buffer_overruns_total{device=\"esp32-audio-1\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value",
+          "thresholds": {
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 1, "color": "red"}
+            ]
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "MQTT Publish Errors",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "mqtt_publish_errors_total{device=\"esp32-audio-1\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value",
+          "thresholds": {
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 1, "color": "red"}
+            ]
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Peak Amplitude",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 12, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "audio_peak_amplitude{device=\"esp32-audio-1\"}",
+            "legendFormat": "Peak",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "label": "Amplitude (0-1)", "max": 1, "min": 0},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 2,
+        "linewidth": 2
+      },
+      {
+        "id": 8,
+        "title": "MQTT Messages Published",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(mqtt_messages_published_total{device=\"esp32-audio-1\"}[1m])",
+            "legendFormat": "Messages/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Rate"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2
+      }
+    ]
+  }
+}

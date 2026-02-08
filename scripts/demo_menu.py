@@ -883,11 +883,11 @@ def iot_node_menu():
         clear_screen()
         print(f"""
 {Colors.HEADER}{Colors.BOLD}╔══════════════════════════════════════════════════════════╗
-║               IOT NODE SIMULATOR                          ║
+║               IOT NODE MANAGEMENT                         ║
 ╠══════════════════════════════════════════════════════════╣{Colors.END}
 {Colors.CYAN}  Information:{Colors.END}
     1. Show Node Details & Architecture
-    2. List Running Nodes
+    2. List Running Nodes (Simulated + ESP32)
     3. View Node Logs
     
 {Colors.CYAN}  Node Control:{Colors.END}
@@ -916,14 +916,29 @@ def iot_node_menu():
             input("\nPress Enter to continue...")
         elif choice == '2':
             print_header("Running IoT Nodes")
+            
+            # Show simulated Docker nodes
             result = subprocess.run(
-                "docker ps --filter 'name=iot-node' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'",
+                "docker ps --filter 'name=iot-node' --format 'table {{.Names}}\t{{.Status}}'",
                 shell=True, capture_output=True, text=True
             )
             if result.stdout:
+                print(f"{Colors.CYAN}Simulated Nodes (Docker):{Colors.END}")
                 print(result.stdout)
             else:
-                print_warning("No nodes running")
+                print_warning("No simulated nodes running")
+            
+            # Check ESP32 hardware node
+            print(f"\n{Colors.CYAN}Hardware Nodes:{Colors.END}")
+            try:
+                response = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
+                if response.status_code == 200:
+                    print(f"  {Colors.GREEN}● esp32-audio-1{Colors.END} - ONLINE (10.218.189.218:8080)")
+                else:
+                    print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - HTTP {response.status_code}")
+            except:
+                print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - OFFLINE")
+            
             input("\nPress Enter to continue...")
         elif choice == '3':
             print_header("Node Logs")
@@ -966,18 +981,43 @@ def iot_node_menu():
             input("\nPress Enter to continue...")
         elif choice == '6':
             print_header("Node Prometheus Metrics")
+            
+            # Check ESP32 first
+            print(f"\n{Colors.CYAN}ESP32 Hardware Node:{Colors.END}")
+            try:
+                response = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
+                if response.status_code == 200:
+                    print(f"  {Colors.GREEN}● esp32-audio-1{Colors.END} - http://10.218.189.218:8080/metrics")
+                    # Parse and show key metrics
+                    for line in response.text.split('\n'):
+                        if 'audio_sample_rate_hz{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    Sample Rate: {val} Hz")
+                        elif 'audio_gain_multiplier{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    Audio Gain: {val}x")
+                        elif 'telemetry_publish_interval_ms{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    Publish Interval: {float(val)/1000}s")
+                        elif 'mqtt_qos_level{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    QoS Level: {val}")
+                        elif 'audio_frames_captured_total{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    Frames Captured: {val}")
+                else:
+                    print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - OFFLINE")
+            except:
+                print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - UNREACHABLE")
+            
+            # Check simulated nodes
+            print(f"\n{Colors.CYAN}Simulated IoT Nodes:{Colors.END}")
             print_info("Each node exposes metrics on port 8001-8010")
-            print()
-            # Try to get metrics from first node
             for port in range(8001, 8011):
                 try:
-                    response = requests.get(f"http://localhost:{port}/metrics", timeout=2)
+                    response = requests.get(f"http://localhost:{port}/metrics", timeout=1)
                     if response.status_code == 200:
                         print(f"  {Colors.GREEN}●{Colors.END} Port {port}: Available")
-                        # Show key metrics
-                        for line in response.text.split('\n')[:5]:
-                            if line and not line.startswith('#'):
-                                print(f"    {Colors.DIM}{line[:60]}{Colors.END}")
                 except:
                     print(f"  {Colors.RED}○{Colors.END} Port {port}: Not reachable")
             input("\nPress Enter to continue...")
@@ -1012,27 +1052,50 @@ def send_mqtt_control_message():
     """Send control message to IoT node via MQTT"""
     print_header("Send MQTT Control Message")
     
-    # List available nodes
+    # List available nodes (simulated + ESP32)
     result = subprocess.run(
         "docker ps --filter 'name=iot-node' --format '{{.Names}}'",
         shell=True, capture_output=True, text=True
     )
     
-    if not result.stdout:
+    nodes = []
+    if result.stdout:
+        nodes = sorted(result.stdout.strip().split('\n'))
+    
+    # Add ESP32 if online
+    esp32_online = False
+    try:
+        resp = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
+        if resp.status_code == 200:
+            esp32_online = True
+            nodes.append("esp32-audio-1")
+    except:
+        pass
+    
+    if not nodes:
         print_warning("No IoT nodes running")
         return
     
-    nodes = sorted(result.stdout.strip().split('\n'))
-    print("Available nodes:")
+    print(f"{Colors.CYAN}Available nodes:{Colors.END}")
     for i, node in enumerate(nodes, 1):
-        node_id = node.replace('imperium-iot-', '')
-        print(f"  {i}. {node_id}")
+        if node.startswith('esp32'):
+            status = f"{Colors.GREEN}● ONLINE{Colors.END}" if esp32_online else f"{Colors.RED}○ OFFLINE{Colors.END}"
+            print(f"  {i}. {node} (ESP32 Hardware) {status}")
+        else:
+            node_id = node.replace('imperium-iot-', '')
+            print(f"  {i}. {node_id}")
     
-    print(f"\n{Colors.CYAN}Example control messages:{Colors.END}")
+    print(f"\n{Colors.CYAN}Example control messages (Simulated Nodes):{Colors.END}")
     print('  • {"qos": 2}                    - Set QoS level to 2')
     print('  • {"sampling_rate": 10}         - Set sampling rate to 10s')
     print('  • {"priority": "high"}          - Set high priority')
     print('  • {"enabled": false}            - Disable node')
+    print(f"\n{Colors.CYAN}ESP32 Audio Node Commands:{Colors.END}")
+    print('  • {"command":"SET_SAMPLE_RATE","sample_rate":48000}')
+    print('  • {"command":"SET_AUDIO_GAIN","gain":2.5}')
+    print('  • {"command":"SET_PUBLISH_INTERVAL","interval_ms":5000}')
+    print('  • {"command":"SET_QOS","qos":2}')
+    print('  • {"command":"RESET"}')
     
     node_num = input(f"\n{Colors.CYAN}Select node number:{Colors.END} ").strip()
     if not node_num.isdigit() or not 1 <= int(node_num) <= len(nodes):
@@ -1040,7 +1103,12 @@ def send_mqtt_control_message():
         return
     
     node = nodes[int(node_num) - 1]
-    node_id = node.replace('imperium-iot-', '')
+    
+    # Handle ESP32 vs simulated nodes differently
+    if node.startswith('esp32'):
+        node_id = node
+    else:
+        node_id = node.replace('imperium-iot-', '')
     
     message = input(f"{Colors.CYAN}Enter JSON message:{Colors.END} ").strip()
     if not message:
@@ -1048,7 +1116,7 @@ def send_mqtt_control_message():
     
     # Send via mosquitto_pub
     topic = f"iot/{node_id}/control"
-    cmd = f"docker exec imperium-mqtt mosquitto_pub -t '{topic}' -m '{message}'"
+    cmd = f"docker exec imperium-mqtt-1 mosquitto_pub -t '{topic}' -m '{message}'"
     
     print(f"\n{Colors.YELLOW}Sending to topic: {topic}{Colors.END}")
     print(f"{Colors.YELLOW}Message: {message}{Colors.END}")
@@ -1056,7 +1124,10 @@ def send_mqtt_control_message():
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.returncode == 0:
         print_success("Message sent successfully!")
-        print_info("Check node logs to see if it was received")
+        if node.startswith('esp32'):
+            print_info("Wait 3 seconds, then check metrics: http://10.218.189.218:8080/metrics")
+        else:
+            print_info("Check node logs to see if it was received")
     else:
         print_error(f"Failed to send: {result.stderr}")
 
@@ -1389,6 +1460,7 @@ def run_demo_sequence():
 # ============== Predefined Intents ==============
 
 EXAMPLE_INTENTS = [
+    # Simulated IoT Node Intents
     "prioritize node-1",
     "limit bandwidth to 100KB/s for node-2",
     "reduce latency to 10ms for node-3",
@@ -1397,6 +1469,14 @@ EXAMPLE_INTENTS = [
     "limit bandwidth to 50KB/s for node-6 and node-7",
     "reduce latency for node-8 and node-9",
     "set high priority for node-10",
+    
+    # ESP32 Hardware Node Intents
+    "set sample rate to 48000 hz for esp32-audio-1",
+    "set audio gain to 2.5 for esp32-audio-1",
+    "set publish interval to 5 seconds for esp32-audio-1",
+    "set sample rate to 8000 hz for esp32-audio-1",
+    "set audio gain to 0.5 for esp32-audio-1",
+    "set QoS level 2 for esp32-audio-1",
 ]
 
 def submit_example_intent():
@@ -1505,11 +1585,17 @@ def main_menu():
             if not TOKEN:
                 print_info("Logging in first...")
                 login()
-            print(f"\n{Colors.DIM}Examples (use node-1 through node-10):{Colors.END}")
+            print(f"\n{Colors.DIM}Simulated IoT Nodes (node-1 through node-10):{Colors.END}")
             print(f"  - prioritize node-1")
             print(f"  - limit bandwidth to 50KB/s for node-2")
             print(f"  - reduce latency to 10ms for node-3")
             print(f"  - set QoS level 2 for node-4 and node-5")
+            print(f"\n{Colors.DIM}ESP32 Audio Node (esp32-audio-1):{Colors.END}")
+            print(f"  - set sample rate to 48000 hz for esp32-audio-1")
+            print(f"  - set audio gain to 2.5 for esp32-audio-1")
+            print(f"  - set telemetry rate to 5 seconds for esp32-audio-1")
+            print(f"  - amplify audio by 3x for esp32-audio-1")
+            print(f"  - report telemetry every 2 seconds for esp32-audio-1")
             description = input(f"\n{Colors.CYAN}Enter intent description:{Colors.END} ").strip()
             if description:
                 submit_intent(description)

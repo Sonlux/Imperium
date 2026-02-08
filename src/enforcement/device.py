@@ -90,6 +90,14 @@ class DeviceEnforcer:
             return self._apply_qos_policy(policy)
         elif policy_type == 'device_config':
             return self._apply_device_config(policy)
+        elif policy_type == 'sample_rate':
+            return self._apply_sample_rate_policy(policy)
+        elif policy_type == 'device_control':
+            return self._apply_device_control_policy(policy)
+        elif policy_type == 'publish_interval':
+            return self._apply_publish_interval_policy(policy)
+        elif policy_type == 'audio_gain':
+            return self._apply_audio_gain_policy(policy)
         else:
             logger.warning(f"Unsupported policy type for devices: {policy_type}")
             return False
@@ -101,10 +109,76 @@ class DeviceEnforcer:
         
         logger.info(f"Applying QoS policy to {target}: {params}")
         
+        # Check if target is ESP32 device (uses different message format)
+        if 'esp32' in target.lower():
+            control_message = {
+                'command': 'SET_QOS',
+                'qos': int(params.get('mqtt_qos', 1))
+            }
+        else:
+            control_message = {
+                'type': 'qos_update',
+                'qos': params.get('mqtt_qos', 0),
+                'reliable_delivery': params.get('reliable_delivery', False)
+            }
+        
+        return self._send_control_message(target, control_message)
+    
+    def _apply_sample_rate_policy(self, policy: Dict) -> bool:
+        """Apply sample rate policy to audio devices (ESP32)"""
+        target = policy.get('target')
+        params = policy.get('parameters', {})
+        
+        sample_rate = params.get('sample_rate', 16000)
+        logger.info(f"Applying sample rate policy to {target}: {sample_rate} Hz")
+        
         control_message = {
-            'type': 'qos_update',
-            'qos': params.get('mqtt_qos', 0),
-            'reliable_delivery': params.get('reliable_delivery', False)
+            'command': 'SET_SAMPLE_RATE',
+            'sample_rate': int(sample_rate)
+        }
+        
+        return self._send_control_message(target, control_message)
+    
+    def _apply_device_control_policy(self, policy: Dict) -> bool:
+        """Apply enable/disable/reset control to device"""
+        target = policy.get('target')
+        params = policy.get('parameters', {})
+        
+        command = params.get('command', 'ENABLE')
+        logger.info(f"Applying device control to {target}: {command}")
+        
+        control_message = {
+            'command': command
+        }
+        
+        return self._send_control_message(target, control_message)
+    
+    def _apply_publish_interval_policy(self, policy: Dict) -> bool:
+        """Apply publish interval policy to device"""
+        target = policy.get('target')
+        params = policy.get('parameters', {})
+        
+        interval_ms = params.get('interval_ms', 10000)
+        logger.info(f"Applying publish interval policy to {target}: {interval_ms} ms")
+        
+        control_message = {
+            'command': 'SET_PUBLISH_INTERVAL',
+            'interval_ms': int(interval_ms)
+        }
+        
+        return self._send_control_message(target, control_message)
+    
+    def _apply_audio_gain_policy(self, policy: Dict) -> bool:
+        """Apply audio gain policy to audio devices"""
+        target = policy.get('target')
+        params = policy.get('parameters', {})
+        
+        gain = params.get('gain', 1.0)
+        logger.info(f"Applying audio gain policy to {target}: {gain}x")
+        
+        control_message = {
+            'command': 'SET_AUDIO_GAIN',
+            'gain': float(gain)
         }
         
         return self._send_control_message(target, control_message)

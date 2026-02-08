@@ -132,8 +132,8 @@ class IntentManager:
         """Enforce generated policies via MQTT and network"""
         target_device = parsed.get('parameters', {}).get('target_device', '')
         
-        # Normalize target (ensure node-X format)
-        if target_device and not target_device.startswith('node-'):
+        # Normalize target (ensure node-X format for simulated nodes only, preserve esp32- prefix)
+        if target_device and not target_device.startswith(('node-', 'esp32-')):
             target_device = f"node-{target_device}"
         
         for policy in policies:
@@ -149,8 +149,8 @@ class IntentManager:
             
             logger.info(f"Enforcing policy: {enforce_policy}")
             
-            # Apply via device enforcer (MQTT)
-            if self.device_enforcer and policy_type in ['qos_control', 'device_config']:
+            # Apply via device enforcer (MQTT) - includes ESP32 controls
+            if self.device_enforcer and policy_type in ['qos_control', 'device_config', 'sample_rate', 'audio_gain', 'publish_interval']:
                 try:
                     success = self.device_enforcer.apply_policy(enforce_policy)
                     logger.info(f"Device enforcement {'succeeded' if success else 'failed'}")

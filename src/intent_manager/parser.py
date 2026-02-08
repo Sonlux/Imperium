@@ -34,6 +34,28 @@ class IntentParser:
                 (r'qos\s+(?:level\s+)?(\d+)', 'qos_level'),
                 (r'quality\s+of\s+service\s+(\d+)', 'qos_level'),
                 (r'reliable\s+delivery\s+(?:for\s+)?(\S+)', 'reliable_delivery')
+            ],
+            'sample_rate': [
+                (r'(?:set\s+)?sample\s*rate\s+(?:to\s+)?(\d+)\s*(?:hz|khz)?', 'sample_rate'),
+                (r'(?:change|reduce|increase)\s+sampling\s+(?:rate\s+)?(?:to\s+)?(\d+)', 'sample_rate'),
+                (r'audio\s+(?:sample\s*)?rate\s+(\d+)', 'sample_rate'),
+                (r'(\d+)\s*(?:hz|khz)\s+(?:sample|sampling|audio)', 'sample_rate')
+            ],
+            'device_control': [
+                (r'(?:enable|start|activate)\s+(?:device\s+)?(\S+)', 'enable_device'),
+                (r'(?:disable|stop|deactivate)\s+(?:device\s+)?(\S+)', 'disable_device'),
+                (r'reset\s+(?:device\s+)?(\S+)', 'reset_device')
+            ],
+            'publish_interval': [
+                (r'(?:set\s+)?(?:publish|telemetry|reporting)\s+(?:interval|rate)\s+(?:to\s+)?(\d+)\s*(?:ms|seconds?|s)?', 'interval_value'),
+                (r'(?:send|report)\s+(?:data|telemetry)\s+every\s+(\d+)\s*(?:ms|seconds?|s)?', 'interval_value'),
+                (r'(?:reduce|increase)\s+(?:publish|telemetry)\s+(?:frequency|rate)?\s*(?:to\s+)?(\d+)', 'interval_value')
+            ],
+            'audio_gain': [
+                (r'(?:set\s+)?(?:audio\s+)?gain\s+(?:to\s+)?(\d+\.?\d*)[x%]?', 'gain_value'),
+                (r'(?:amplify|boost)\s+(?:audio\s+)?(?:by\s+)?(\d+\.?\d*)[x%]?', 'gain_value'),
+                (r'(?:reduce|lower|decrease)\s+(?:audio\s+)?(?:volume|level|gain)\s+(?:to\s+)?(\d+\.?\d*)', 'gain_value'),
+                (r'(?:set\s+)?audio\s+(?:volume|level)\s+(?:to\s+)?(\d+\.?\d*)', 'gain_value')
             ]
         }
     
@@ -68,19 +90,38 @@ class IntentParser:
         if device_match:
             parsed['parameters']['target_device'] = device_match.group(1)
         
+        # Extract ESP32 audio device targets
+        esp_match = re.search(r'esp32[-_]?(audio[-_]?\d*|\d+)', intent_lower)
+        if esp_match:
+            parsed['parameters']['target_device'] = f"esp32-audio-{esp_match.group(1).replace('audio-', '').replace('audio', '1')}"
+        
+        # Handle 'for X' pattern for device targeting
+        for_match = re.search(r'for\s+(esp32[-\w]*|node[-\w]*|\S+[-_]\d+)', intent_lower)
+        if for_match and 'target_device' not in parsed['parameters']:
+            parsed['parameters']['target_device'] = for_match.group(1)
+        
         logger.info(f"Parsed intent: {parsed}")
         return parsed
     
     def _determine_type(self, intent_description: str) -> str:
         """Determine the primary intent type"""
-        if any(word in intent_description for word in ['priority', 'prioritize', 'critical']):
+        # Check QoS first before audio gain (to avoid 'level' keyword collision)
+        if any(word in intent_description for word in ['qos', 'quality of service', 'reliable delivery']):
+            return 'qos'
+        elif any(word in intent_description for word in ['sample rate', 'sampling', 'audio rate', 'khz', ' hz']):
+            return 'sample_rate'
+        elif any(word in intent_description for word in ['gain', 'amplify', 'boost', 'audio volume', 'audio level']):
+            return 'audio_gain'
+        elif any(word in intent_description for word in ['publish interval', 'telemetry rate', 'telemetry', 'reporting', 'send data', 'report every', 'report telemetry']):
+            return 'publish_interval'
+        elif any(word in intent_description for word in ['enable', 'disable', 'start', 'stop', 'activate', 'deactivate', 'reset']):
+            return 'device_control'
+        elif any(word in intent_description for word in ['priority', 'prioritize', 'critical']):
             return 'priority'
         elif any(word in intent_description for word in ['bandwidth', 'throttle', 'limit']):
             return 'bandwidth'
         elif any(word in intent_description for word in ['latency', 'delay', 'response']):
             return 'latency'
-        elif any(word in intent_description for word in ['qos', 'quality', 'reliable']):
-            return 'qos'
         else:
             return 'general'
     
