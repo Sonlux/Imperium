@@ -150,7 +150,7 @@ class IntentManager:
             logger.info(f"Enforcing policy: {enforce_policy}")
             
             # Apply via device enforcer (MQTT) - includes ESP32 controls
-            if self.device_enforcer and policy_type in ['qos_control', 'device_config', 'sample_rate', 'audio_gain', 'publish_interval']:
+            if self.device_enforcer and policy_type in ['qos_control', 'device_config', 'sample_rate', 'sampling_interval', 'audio_gain', 'publish_interval']:
                 try:
                     success = self.device_enforcer.apply_policy(enforce_policy)
                     logger.info(f"Device enforcement {'succeeded' if success else 'failed'}")

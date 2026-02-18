@@ -40,6 +40,112 @@ devices:
       min_latency: "100ms"
     location: "storage-B-2"
 
+  # CO2 Sensors (Air Quality)
+  mhz19-01:
+    type: co2_sensor
+    model: MH-Z19B
+    description: "MH-Z19 CO2 sensor - Lab environment monitoring"
+    capabilities:
+      - mqtt
+      - co2_monitoring
+      - temperature
+      - calibration
+      - prometheus_metrics
+    qos_profile: high_priority
+    priority_level: 8
+    default_sampling_rate: 5  # seconds
+    mqtt_topics:
+      telemetry: "imperium/devices/mhz19-01/telemetry"
+      config: "imperium/devices/mhz19-01/config"
+      status: "imperium/devices/mhz19-01/status"
+    network:
+      max_bandwidth: "1mbps"
+      min_latency: "200ms"
+    sensor_specs:
+      measurement_range: "0-5000 ppm"
+      accuracy: "±50ppm + 5%"
+      warmup_time: "3 minutes"
+    location: "lab-1"
+    alerts:
+      high_co2: 1000
+      critical_co2: 2000
+
+  esp32-mhz19-1:
+    type: co2_sensor
+    model: MH-Z19B
+    description: "ESP32 with MH-Z19 CO2 sensor - Indoor air quality monitoring"
+    capabilities:
+      - mqtt
+      - co2_monitoring
+      - temperature
+      - calibration
+      - prometheus_metrics
+    qos_profile: high_priority
+    priority_level: 8
+    default_publish_interval: 5000 # milliseconds
+    mqtt_topics:
+      telemetry: "imperium/devices/esp32-mhz19-1/telemetry"
+      control: "imperium/devices/esp32-mhz19-1/control"
+      config: "imperium/devices/esp32-mhz19-1/config"
+      status: "imperium/devices/esp32-mhz19-1/status"
+    network:
+      max_bandwidth: "1mbps"
+      min_latency: "200ms"
+    sensor_specs:
+      measurement_range: "0-5000 ppm"
+      accuracy: "±50ppm + 5%"
+      warmup_time: "3 minutes"
+      response_time: "< 60 seconds"
+      detection_ranges:
+        - 2000
+        - 5000
+        - 10000
+      abc_logic: enabled
+    location: "office-main"
+    alerts:
+      high_co2: 1000  # ppm - ventilation recommended
+      critical_co2: 2000  # ppm - immediate action required
+
+  # Environmental Sensors (Combined CO2 + Audio)
+  esp32-env-1:
+    type: environmental_sensor
+    description: "ESP32 Environmental Node - MH-Z19 CO2 + INMP441 Audio"
+    capabilities:
+      - mqtt
+      - co2_monitoring
+      - audio_monitoring
+      - temperature
+      - prometheus_metrics
+      - policy_control
+    qos_profile: high_priority
+    priority_level: 8
+    default_publish_interval: 5000 # milliseconds
+    mqtt_topics:
+      telemetry: "imperium/devices/esp32-env-1/telemetry"
+      control: "imperium/devices/esp32-env-1/control"
+      config: "imperium/devices/esp32-env-1/config"
+      status: "imperium/devices/esp32-env-1/status"
+      audio: "imperium/devices/esp32-env-1/audio"
+    network:
+      max_bandwidth: "2mbps"
+      min_latency: "150ms"
+      metrics_port: 8080
+    sensor_specs:
+      co2:
+        measurement_range: "0-5000 ppm"
+        accuracy: "±50ppm + 5%"
+        warmup_time: "3 minutes"
+      audio:
+        sample_rate: 16000
+        channels: 1
+        bits_per_sample: 16
+        noise_threshold: -30 # dB
+    location: "office-main"
+    alerts:
+      high_co2: 1000
+      critical_co2: 2000
+      noise_detected: -30 # dB threshold
+
   # Audio Sensors
   esp32-audio-1:
     type: audio_sensor
@@ -70,7 +176,47 @@ devices:
       buffer_count: 4
     location: "raspberry-pi-network"
 
-  # Cameras
+  # ESP32-CAM Devices
+  esp32-cam-1:
+    type: camera
+    description: "ESP32-CAM with OV2640 - Image capture node"
+    capabilities:
+      - mqtt
+      - image_capture
+      - prometheus_metrics
+      - policy_control
+    qos_profile: high_priority
+    priority_level: 8
+    default_resolution: "SVGA" # 800x600
+    default_quality: 10 # JPEG quality (0-63, lower is better)
+    default_brightness: 0 # -2 to 2
+    default_capture_interval: 5000 # ms (5 seconds)
+    mqtt_topics:
+      images: "iot/esp32-cam-1/images"
+      telemetry: "iot/esp32-cam-1/telemetry"
+      control: "iot/esp32-cam-1/control"
+      status: "iot/esp32-cam-1/status"
+    network:
+      ip_address: "10.218.189.xxx" # Will be assigned via DHCP
+      max_bandwidth: "1mbps"
+      min_latency: "200ms"
+      metrics_port: 8080
+    camera_config:
+      resolutions:
+        - "QVGA"   # 320x240
+        - "VGA"    # 640x480
+        - "SVGA"   # 800x600 (default)
+        - "XGA"    # 1024x768
+        - "HD"     # 1280x720
+        - "SXGA"   # 1280x1024
+        - "UXGA"   # 1600x1200
+      quality_range: [0, 63]
+      brightness_range: [-2, 2]
+      min_capture_interval: 100 # ms (10 FPS max)
+      max_capture_interval: 60000 # ms (1 frame per minute min)
+    location: "raspberry-pi-network"
+
+  # Simulated Cameras
   camera-1:
     type: camera
     description: "Security camera - Main entrance"

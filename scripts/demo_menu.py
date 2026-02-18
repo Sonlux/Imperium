@@ -928,8 +928,9 @@ def iot_node_menu():
             else:
                 print_warning("No simulated nodes running")
             
-            # Check ESP32 hardware node
+            # Check ESP32 hardware nodes
             print(f"\n{Colors.CYAN}Hardware Nodes:{Colors.END}")
+            # Audio node
             try:
                 response = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
                 if response.status_code == 200:
@@ -938,6 +939,22 @@ def iot_node_menu():
                     print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - HTTP {response.status_code}")
             except:
                 print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - OFFLINE")
+            
+            # CO2 sensor node
+            try:
+                response = requests.get("http://10.218.189.206:8080/metrics", timeout=2)
+                if response.status_code == 200:
+                    # Extract CO2 value
+                    co2_val = "--"
+                    for line in response.text.split('\n'):
+                        if 'co2_ppm{' in line and not line.startswith('#'):
+                            co2_val = line.split('}')[1].strip()
+                            break
+                    print(f"  {Colors.GREEN}● esp32-mhz19-1{Colors.END} - ONLINE (CO2: {co2_val} ppm)")
+                else:
+                    print(f"  {Colors.RED}○ esp32-mhz19-1{Colors.END} - HTTP {response.status_code}")
+            except:
+                print(f"  {Colors.RED}○ esp32-mhz19-1{Colors.END} - OFFLINE")
             
             input("\nPress Enter to continue...")
         elif choice == '3':
@@ -982,8 +999,8 @@ def iot_node_menu():
         elif choice == '6':
             print_header("Node Prometheus Metrics")
             
-            # Check ESP32 first
-            print(f"\n{Colors.CYAN}ESP32 Hardware Node:{Colors.END}")
+            # Check ESP32 Audio first
+            print(f"\n{Colors.CYAN}ESP32 Hardware Nodes:{Colors.END}")
             try:
                 response = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
                 if response.status_code == 200:
@@ -1009,6 +1026,36 @@ def iot_node_menu():
                     print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - OFFLINE")
             except:
                 print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - UNREACHABLE")
+            
+            # Check ESP32 CO2 sensor
+            try:
+                response = requests.get("http://10.218.189.206:8080/metrics", timeout=2)
+                if response.status_code == 200:
+                    print(f"  {Colors.GREEN}● esp32-mhz19-1{Colors.END} - http://10.218.189.206:8080/metrics")
+                    # Parse and show key metrics
+                    for line in response.text.split('\n'):
+                        if 'co2_ppm{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    CO2 Level: {val} ppm")
+                        elif 'co2_temperature_celsius{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    Temperature: {val}°C")
+                        elif 'co2_readings_total{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    Total Readings: {val}")
+                        elif 'co2_publish_interval_ms{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    Publish Interval: {float(val)/1000}s")
+                        elif 'mqtt_qos_level{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    QoS Level: {val}")
+                        elif 'wifi_rssi_dbm{' in line and not line.startswith('#'):
+                            val = line.split('}')[1].strip()
+                            print(f"    WiFi RSSI: {val} dBm")
+                else:
+                    print(f"  {Colors.RED}○ esp32-mhz19-1{Colors.END} - OFFLINE")
+            except:
+                print(f"  {Colors.RED}○ esp32-mhz19-1{Colors.END} - UNREACHABLE")
             
             # Check simulated nodes
             print(f"\n{Colors.CYAN}Simulated IoT Nodes:{Colors.END}")
@@ -1062,13 +1109,23 @@ def send_mqtt_control_message():
     if result.stdout:
         nodes = sorted(result.stdout.strip().split('\n'))
     
-    # Add ESP32 if online
-    esp32_online = False
+    # Add ESP32 audio if online
+    esp32_audio_online = False
     try:
         resp = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
         if resp.status_code == 200:
-            esp32_online = True
+            esp32_audio_online = True
             nodes.append("esp32-audio-1")
+    except:
+        pass
+    
+    # Add ESP32 CO2 sensor if online
+    esp32_co2_online = False
+    try:
+        resp = requests.get("http://10.218.189.206:8080/metrics", timeout=2)
+        if resp.status_code == 200:
+            esp32_co2_online = True
+            nodes.append("esp32-mhz19-1")
     except:
         pass
     
@@ -1078,9 +1135,12 @@ def send_mqtt_control_message():
     
     print(f"{Colors.CYAN}Available nodes:{Colors.END}")
     for i, node in enumerate(nodes, 1):
-        if node.startswith('esp32'):
-            status = f"{Colors.GREEN}● ONLINE{Colors.END}" if esp32_online else f"{Colors.RED}○ OFFLINE{Colors.END}"
-            print(f"  {i}. {node} (ESP32 Hardware) {status}")
+        if node == 'esp32-audio-1':
+            status = f"{Colors.GREEN}● ONLINE{Colors.END}" if esp32_audio_online else f"{Colors.RED}○ OFFLINE{Colors.END}"
+            print(f"  {i}. {node} (ESP32 Audio) {status}")
+        elif node == 'esp32-mhz19-1':
+            status = f"{Colors.GREEN}● ONLINE{Colors.END}" if esp32_co2_online else f"{Colors.RED}○ OFFLINE{Colors.END}"
+            print(f"  {i}. {node} (ESP32 CO2 Sensor) {status}")
         else:
             node_id = node.replace('imperium-iot-', '')
             print(f"  {i}. {node_id}")
@@ -1090,11 +1150,27 @@ def send_mqtt_control_message():
     print('  • {"sampling_rate": 10}         - Set sampling rate to 10s')
     print('  • {"priority": "high"}          - Set high priority')
     print('  • {"enabled": false}            - Disable node')
+    
     print(f"\n{Colors.CYAN}ESP32 Audio Node Commands:{Colors.END}")
     print('  • {"command":"SET_SAMPLE_RATE","sample_rate":48000}')
     print('  • {"command":"SET_AUDIO_GAIN","gain":2.5}')
     print('  • {"command":"SET_PUBLISH_INTERVAL","interval_ms":5000}')
     print('  • {"command":"SET_QOS","qos":2}')
+    print('  • {"command":"RESET"}')
+    
+    print(f"\n{Colors.CYAN}ESP32-CAM Node Commands:{Colors.END}")
+    print('  • {"resolution":"VGA"}')
+    print('  • {"quality":15}')
+    print('  • {"brightness":1}')
+    print('  • {"capture_interval_ms":3000}')
+    print('  • {"enabled":false}')
+    print('  • {"mqtt_qos":2}')
+    
+    print(f"\n{Colors.CYAN}ESP32 CO2 Sensor (MH-Z19) Commands:{Colors.END}")
+    print('  • {"command":"SET_SAMPLING_INTERVAL","interval_seconds":10}')
+    print('  • {"command":"SET_QOS","qos":2}')
+    print('  • {"command":"SET_PUBLISH_INTERVAL","interval_ms":5000}')
+    print('  • {"command":"CALIBRATE_ZERO"}')
     print('  • {"command":"RESET"}')
     
     node_num = input(f"\n{Colors.CYAN}Select node number:{Colors.END} ").strip()
@@ -1470,13 +1546,29 @@ EXAMPLE_INTENTS = [
     "reduce latency for node-8 and node-9",
     "set high priority for node-10",
     
-    # ESP32 Hardware Node Intents
+    # ESP32 Audio Node Intents
     "set sample rate to 48000 hz for esp32-audio-1",
     "set audio gain to 2.5 for esp32-audio-1",
     "set publish interval to 5 seconds for esp32-audio-1",
     "set sample rate to 8000 hz for esp32-audio-1",
     "set audio gain to 0.5 for esp32-audio-1",
     "set QoS level 2 for esp32-audio-1",
+    
+    # ESP32-CAM Node Intents
+    "set resolution to VGA for esp32-cam-1",
+    "set quality to 15 for esp32-cam-1",
+    "set brightness to 1 for esp32-cam-1",
+    "set capture interval to 3 seconds for esp32-cam-1",
+    "set resolution to HD for esp32-cam-1",
+    "disable camera for esp32-cam-1",
+    
+    # ESP32 CO2 Sensor (MH-Z19) Intents
+    "set sampling interval for mhz19-01 to 5 seconds",
+    "read co2 every 10 seconds for mhz19-01",
+    "set sampling interval for mhz19-01 to 30 seconds",
+    "set QoS level 2 for esp32-mhz19-1",
+    "prioritize esp32-mhz19-1",
+    "limit bandwidth for mhz19-01 to 50 kbps",
 ]
 
 def submit_example_intent():
@@ -1596,6 +1688,14 @@ def main_menu():
             print(f"  - set telemetry rate to 5 seconds for esp32-audio-1")
             print(f"  - amplify audio by 3x for esp32-audio-1")
             print(f"  - report telemetry every 2 seconds for esp32-audio-1")
+            
+            print(f"\n{Colors.DIM}ESP32-CAM Node (esp32-cam-1):{Colors.END}")
+            print(f"  - set resolution to VGA for esp32-cam-1")
+            print(f"  - set quality to 15 for esp32-cam-1")
+            print(f"  - set brightness to 1 for esp32-cam-1")
+            print(f"  - set capture interval to 3 seconds for esp32-cam-1")
+            print(f"  - disable camera for esp32-cam-1")
+            
             description = input(f"\n{Colors.CYAN}Enter intent description:{Colors.END} ").strip()
             if description:
                 submit_intent(description)

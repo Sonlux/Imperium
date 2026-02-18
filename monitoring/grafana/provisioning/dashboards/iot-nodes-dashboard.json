@@ -1,0 +1,159 @@
+{
+  "uid": "iot-nodes-simulated",
+  "title": "Simulated IoT Nodes (1-10)",
+  "tags": ["iot", "simulated", "nodes", "docker"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "editable": true,
+  "time": {"from": "now-30m", "to": "now"},
+  "templating": {
+    "list": [
+      {
+        "name": "node",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+        "query": "label_values(iot_temperature_celsius, node_id)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "current": {"selected": true, "text": "All", "value": "$__all"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Nodes",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "count(node_enabled == 1)", "legendFormat": "Active", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 5}, {"color": "green", "value": 10}]}}}
+    },
+    {
+      "id": 2,
+      "title": "Total MQTT Messages",
+      "type": "stat",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "sum(mqtt_messages_published_total)", "legendFormat": "Messages", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "id": 3,
+      "title": "Avg Temperature",
+      "type": "gauge",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "avg(iot_temperature_celsius)", "legendFormat": "Avg Temp", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "celsius", "min": 15, "max": 35, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 18}, {"color": "yellow", "value": 26}, {"color": "red", "value": 30}]}}}
+    },
+    {
+      "id": 4,
+      "title": "Avg Humidity",
+      "type": "gauge",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "avg(iot_humidity_percent)", "legendFormat": "Avg Humidity", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 30}, {"color": "green", "value": 40}, {"color": "yellow", "value": 70}, {"color": "red", "value": 80}]}}}
+    },
+    {
+      "id": 5,
+      "title": "Avg Battery",
+      "type": "gauge",
+      "gridPos": {"x": 16, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "avg(iot_battery_percent)", "legendFormat": "Battery", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "orange", "value": 20}, {"color": "yellow", "value": 40}, {"color": "green", "value": 60}]}}}
+    },
+    {
+      "id": 6,
+      "title": "Message Rate",
+      "type": "stat",
+      "gridPos": {"x": 20, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "sum(rate(mqtt_messages_published_total[1m]))*60", "legendFormat": "msg/min", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "id": 7,
+      "title": "Temperature by Node",
+      "type": "bargauge",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "iot_temperature_celsius{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "fieldConfig": {"defaults": {"unit": "celsius", "min": 15, "max": 35, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 18}, {"color": "yellow", "value": 26}, {"color": "red", "value": 30}]}}}
+    },
+    {
+      "id": 8,
+      "title": "Humidity by Node",
+      "type": "bargauge",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "iot_humidity_percent{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 30}, {"color": "green", "value": 40}, {"color": "yellow", "value": 70}, {"color": "red", "value": 80}]}}}
+    },
+    {
+      "id": 9,
+      "title": "Battery Levels",
+      "type": "bargauge",
+      "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "iot_battery_percent{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "orange", "value": 20}, {"color": "yellow", "value": 40}, {"color": "green", "value": 60}]}}}
+    },
+    {
+      "id": 10,
+      "title": "Pressure by Node",
+      "type": "bargauge",
+      "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "iot_pressure_hpa{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "fieldConfig": {"defaults": {"unit": "pressurehpa", "min": 980, "max": 1040, "thresholds": {"mode": "absolute", "steps": [{"color": "yellow", "value": null}, {"color": "green", "value": 1000}, {"color": "yellow", "value": 1030}]}}}
+    },
+    {
+      "id": 11,
+      "title": "QoS Level by Node",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 20, "w": 12, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "mqtt_qos_level{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "options": {"graphMode": "none", "colorMode": "background", "textMode": "value_and_name"},
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 1}, {"color": "orange", "value": 2}]}}}
+    },
+    {
+      "id": 12,
+      "title": "Publish Interval (seconds)",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 20, "w": 12, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "mqtt_publish_interval_seconds{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "options": {"graphMode": "none", "colorMode": "background", "textMode": "value_and_name"},
+      "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "red", "value": 30}]}}}
+    },
+    {
+      "id": 13,
+      "title": "Network Latency",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 24, "w": 12, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "node_latency_milliseconds{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "ms", "custom": {"drawStyle": "line", "lineInterpolation": "stepAfter", "fillOpacity": 20, "lineWidth": 2}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 50}, {"color": "red", "value": 100}]}}}
+    },
+    {
+      "id": 14,
+      "title": "MQTT Messages Rate",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 24, "w": 12, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "rate(mqtt_messages_published_total{node_id=~\"$node\"}[1m])*60", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80, "lineWidth": 0, "stacking": {"mode": "normal"}}}}
+    }
+  ]
+}

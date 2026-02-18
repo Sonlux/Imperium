@@ -1,0 +1,162 @@
+{
+  "uid": "esp32-mhz19-1",
+  "title": "ESP32 CO2 Node (esp32-mhz19-1)",
+  "tags": ["esp32", "co2", "mhz19", "hardware"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "editable": true,
+  "time": {"from": "now-30m", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Device Status",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_sensor_online{device=\"esp32-mhz19-1\"}", "legendFormat": "Online", "refId": "A"}],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "OFFLINE", "color": "red"}}},
+            {"type": "value", "options": {"1": {"text": "ONLINE", "color": "green"}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "CO2 Level",
+      "type": "gauge",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_ppm{device=\"esp32-mhz19-1\"}", "legendFormat": "CO2", "refId": "A"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ppm", "min": 0, "max": 5000,
+          "thresholds": {"mode": "absolute", "steps": [
+            {"color": "green", "value": null}, {"color": "yellow", "value": 800},
+            {"color": "orange", "value": 1000}, {"color": "red", "value": 2000}
+          ]}
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Temperature",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_temperature_celsius{device=\"esp32-mhz19-1\"}", "legendFormat": "Temp", "refId": "A"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "thresholds": {"mode": "absolute", "steps": [
+            {"color": "blue", "value": null}, {"color": "green", "value": 18},
+            {"color": "yellow", "value": 28}, {"color": "red", "value": 35}
+          ]}
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Warm-up Status",
+      "type": "stat",
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_sensor_warmed_up{device=\"esp32-mhz19-1\"}", "legendFormat": "Status", "refId": "A"}],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "WARMING UP", "color": "yellow"}}},
+            {"type": "value", "options": {"1": {"text": "READY", "color": "green"}}}
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Publish Interval",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 4, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_publish_interval_ms{device=\"esp32-mhz19-1\"}/1000", "legendFormat": "Interval", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "id": 6,
+      "title": "CO2 Level Over Time",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_ppm{device=\"esp32-mhz19-1\"}", "legendFormat": "CO2 (ppm)", "refId": "A"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ppm",
+          "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 20, "lineWidth": 2},
+          "thresholds": {"mode": "absolute", "steps": [
+            {"color": "green", "value": null}, {"color": "yellow", "value": 800}, {"color": "red", "value": 1000}
+          ]}
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Temperature Over Time",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_temperature_celsius{device=\"esp32-mhz19-1\"}", "legendFormat": "Temp (°C)", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "celsius", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 20, "lineWidth": 2}}}
+    },
+    {
+      "id": 8,
+      "title": "MQTT Messages",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 4, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_messages_published_total{device=\"esp32-mhz19-1\"}", "legendFormat": "Messages", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "id": 9,
+      "title": "QoS Level",
+      "type": "stat",
+      "gridPos": {"x": 18, "y": 4, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_qos_level{device=\"esp32-mhz19-1\"}", "legendFormat": "QoS", "refId": "A"}],
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "id": 10,
+      "title": "Total Readings",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 16, "w": 8, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_readings_total{device=\"esp32-mhz19-1\"}", "legendFormat": "Readings", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "id": 11,
+      "title": "Read Errors",
+      "type": "stat",
+      "gridPos": {"x": 8, "y": 16, "w": 8, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "co2_reading_errors_total{device=\"esp32-mhz19-1\"}", "legendFormat": "Errors", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 12,
+      "title": "WiFi Signal",
+      "type": "gauge",
+      "gridPos": {"x": 16, "y": 16, "w": 8, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "wifi_rssi_dbm{device=\"esp32-dual\"}", "legendFormat": "RSSI", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "dBm", "min": -90, "max": -20, "thresholds": {"mode": "absolute", "steps": [
+        {"color": "red", "value": null}, {"color": "yellow", "value": -70}, {"color": "green", "value": -50}
+      ]}}}
+    }
+  ]
+}

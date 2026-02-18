@@ -35,12 +35,24 @@ scrape_configs:
         target_label: node_number
         replacement: '${1}'
 
-  # ESP32 Audio Node - Physical hardware
-  - job_name: "esp32-audio"
+  # ESP32 DUAL NODE - Single ESP32 running both CO2 and Audio sensors
+  # One endpoint exposes metrics for both logical devices:
+  #   - co2_ppm{device="esp32-mhz19-1"}
+  #   - audio_rms_level_db{device="esp32-audio-1"}
+  - job_name: "esp32-dual-node"
     static_configs:
       - targets:
           - "10.218.189.218:8080"
         labels:
-          device_id: "esp32-audio-1"
-          type: "audio_sensor"
+          type: "dual_sensor"
           group: "hardware-nodes"
+
+  # CO2 Simulator/Collector (fallback when ESP32 offline)
+  - job_name: "co2-collector"
+    static_configs:
+      - targets:
+          - "host.docker.internal:8020"
+        labels:
+          device_id: "mhz19-01"
+          type: "co2_collector"
+          group: "simulators"

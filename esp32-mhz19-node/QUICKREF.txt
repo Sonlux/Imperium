@@ -1,0 +1,187 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                   ESP32 MH-Z19 CO2 SENSOR NODE                              ║
+║                   Complete Setup Created ✓                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📦 PROJECT LOCATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/home/imperium/Imperium/esp32-mhz19-node/
+
+🔌 HARDWARE WIRING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    MH-Z19 Sensor              ESP32 Board
+    ┌─────────────┐            ┌─────────────┐
+    │ 1. HD       │            │             │
+    │ 2. TX   ────┼───────────►│ GPIO16 (RX2)│
+    │ 3. RX   ◄───┼────────────┤ GPIO17 (TX2)│
+    │ 4. -        │            │             │
+    │ 5. -        │            │             │
+    │ 6. VCC  ────┼───────────►│ 5V (VIN)    │
+    │ 7. GND  ────┼───────────►│ GND         │
+    └─────────────┘            └─────────────┘
+
+⚠️  CRITICAL: Use 5V (VIN), NOT 3.3V!
+
+🚀 QUICK START (ONE COMMAND)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+cd /home/imperium/Imperium/esp32-mhz19-node
+./build_and_flash.sh
+
+This will:
+  ✓ Check ESP-IDF installation
+  ✓ Detect ESP32 serial port
+  ✓ Configure WiFi & MQTT (interactive)
+  ✓ Build firmware
+  ✓ Flash to ESP32
+  ✓ Monitor output
+
+📋 MANUAL BUILD STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Install ESP-IDF (if needed):
+   $ mkdir -p ~/esp && cd ~/esp
+   $ git clone --recursive https://github.com/espressif/esp-idf.git
+   $ cd esp-idf && ./install.sh esp32
+   $ source export.sh
+
+2. Configure:
+   $ ./setup_esp.sh
+   (Enter WiFi SSID, password, MQTT broker IP)
+
+3. Build:
+   $ idf.py build
+
+4. Flash:
+   $ idf.py -p /dev/ttyUSB0 flash
+
+5. Monitor:
+   $ idf.py -p /dev/ttyUSB0 monitor
+   (Press Ctrl+] to exit)
+
+📁 PROJECT FILES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+main/
+  ├── main.c              Main application & task management
+  ├── mhz19.c/h           MH-Z19 sensor driver (UART comm)
+  ├── wifi_handler.c/h    WiFi connection & reconnection
+  ├── mqtt_handler.c/h    MQTT pub/sub & JSON handling
+  ├── config.h            Configuration (WiFi, MQTT, pins)
+  └── CMakeLists.txt      Build configuration
+
+Scripts:
+  ├── build_and_flash.sh  ⭐ Complete automated build
+  ├── setup_esp.sh        Configure WiFi/MQTT
+  └── flash.sh            Quick flash only
+
+Documentation:
+  ├── README.md           Full technical docs
+  ├── QUICKSTART.md       Fast setup guide
+  ├── INTEGRATION.md      Imperium integration
+  ├── TROUBLESHOOTING.md  Debug guide
+  └── SETUP_COMPLETE.md   Summary (this file)
+
+✨ FEATURES IMPLEMENTED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Real-time CO2 measurement (0-5000 ppm)
+✓ Temperature reading (internal sensor)
+✓ 3-minute warm-up detection
+✓ Configurable detection range (2000/5000/10000 ppm)
+✓ Zero point calibration (400 ppm)
+✓ Automatic Baseline Correction (ABC)
+✓ WiFi connection with auto-reconnect
+✓ MQTT publish/subscribe
+✓ JSON telemetry format
+✓ Remote control via MQTT commands
+✓ Configurable publish interval (1s-5min)
+✓ LED status indicator
+✓ Watchdog timer & error handling
+
+🌐 MQTT INTEGRATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Subscribe:
+  imperium/devices/esp32-mhz19-1/control  → Commands
+  imperium/devices/esp32-mhz19-1/config   → Configuration
+
+Publish:
+  imperium/devices/esp32-mhz19-1/telemetry → Sensor data
+  imperium/devices/esp32-mhz19-1/status    → Device status
+
+🎯 TESTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Monitor telemetry
+mosquitto_sub -h 192.168.1.100 -t "imperium/devices/esp32-mhz19-1/telemetry"
+
+# Send command
+mosquitto_pub -h 192.168.1.100 \
+    -t "imperium/devices/esp32-mhz19-1/control" \
+    -m '{"command":"GET_INFO"}'
+
+# Test Imperium intent
+curl -X POST http://localhost:5000/api/v1/intents \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"description":"Set publish interval to 10 seconds for esp32-mhz19-1"}'
+
+📊 CO2 LEVELS REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  < 400 ppm    🌳 Outdoor fresh air
+  400-800 ppm  ✅ Good air quality
+  800-1000 ppm ⚠️  Acceptable
+  1000-1500 ppm ⚠️  Poor - increase ventilation
+  1500-2000 ppm ⚠️  Very poor - open windows
+  > 2000 ppm   🚨 Dangerous - evacuate!
+
+🎛️ SUPPORTED COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SET_PUBLISH_INTERVAL  - Change telemetry rate (1000-300000 ms)
+CALIBRATE_ZERO        - Zero calibration (in fresh air)
+SET_DETECTION_RANGE   - Change range (2000/5000/10000 ppm)
+SET_ABC               - Enable/disable auto baseline correction
+GET_INFO              - Query sensor configuration
+
+🔧 CONFIGURATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Edit main/config.h:
+  • WiFi SSID/Password
+  • MQTT Broker URL
+  • Device ID
+  • GPIO Pins
+  • Default publish interval
+  • Detection range
+  • ABC settings
+
+Or run: ./setup_esp.sh
+
+🚨 COMMON ISSUES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Problem                  Solution
+───────────────────────  ─────────────────────────────────────────
+Sensor not responding    Check wiring, verify 5V, wait 3min
+Flash failed             Press BOOT button, check USB cable
+WiFi not connecting      Check SSID/password, use 2.4GHz
+MQTT not connecting      Verify broker IP, test port 1883
+Inaccurate readings      Calibrate in fresh air, enable ABC
+Build errors             source ~/esp/esp-idf/export.sh
+
+See TROUBLESHOOTING.md for detailed solutions.
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+README.md            → Complete technical documentation
+QUICKSTART.md        → Fast setup guide (5 steps)
+INTEGRATION.md       → Imperium system integration
+TROUBLESHOOTING.md   → Debug & problem-solving
+
+🎉 READY TO BUILD!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Connect hardware (see wiring diagram above)
+2. Run: ./build_and_flash.sh
+3. Wait 3 minutes for sensor warm-up
+4. Monitor telemetry via MQTT
+5. Submit intents via Imperium API
+
+Need help? See TROUBLESHOOTING.md or README.md
+
+═══════════════════════════════════════════════════════════════════════════
+Project created: 2026-02-12
+Status: ✅ READY TO FLASH
+═══════════════════════════════════════════════════════════════════════════

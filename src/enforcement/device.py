@@ -92,6 +92,8 @@ class DeviceEnforcer:
             return self._apply_device_config(policy)
         elif policy_type == 'sample_rate':
             return self._apply_sample_rate_policy(policy)
+        elif policy_type == 'sampling_interval':
+            return self._apply_sampling_interval_policy(policy)
         elif policy_type == 'device_control':
             return self._apply_device_control_policy(policy)
         elif policy_type == 'publish_interval':
@@ -136,6 +138,28 @@ class DeviceEnforcer:
             'command': 'SET_SAMPLE_RATE',
             'sample_rate': int(sample_rate)
         }
+        
+        return self._send_control_message(target, control_message)
+    
+    def _apply_sampling_interval_policy(self, policy: Dict) -> bool:
+        """Apply sampling interval policy to environmental sensors (MH-Z19 CO2 sensor)"""
+        target = policy.get('target')
+        params = policy.get('parameters', {})
+        
+        interval_seconds = params.get('interval_seconds', 10)
+        logger.info(f"Applying sampling interval policy to {target}: {interval_seconds} seconds")
+        
+        # ESP32 MH-Z19 uses SET_PUBLISH_INTERVAL with interval_ms
+        if 'esp32' in target.lower() or 'mhz19' in target.lower():
+            control_message = {
+                'command': 'SET_PUBLISH_INTERVAL',
+                'interval_ms': int(interval_seconds) * 1000  # Convert seconds to ms
+            }
+        else:
+            control_message = {
+                'command': 'SET_SAMPLING_INTERVAL',
+                'interval_seconds': int(interval_seconds)
+            }
         
         return self._send_control_message(target, control_message)
     
@@ -206,9 +230,17 @@ class DeviceEnforcer:
             return False
         
         try:
-            topic = f"iot/{target}/control"
+            # ESP32 nodes (MH-Z19 CO2, Audio, Environmental) use imperium/devices/{device}/control
+            # Other IoT nodes use iot/{device}/control topic format
+            target_lower = target.lower()
+            if 'mhz19' in target_lower or 'env' in target_lower or 'audio' in target_lower or 'esp32' in target_lower:
+                topic = f"imperium/devices/{target}/control"
+            else:
+                topic = f"iot/{target}/control"
+            
             payload = json.dumps(message)
             
+            logger.info(f"Sending to topic: {topic}")
             result = self.client.publish(topic, payload, qos=1)
             
             if result.rc == mqtt.MQTT_ERR_SUCCESS:

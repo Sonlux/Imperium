@@ -1,0 +1,20 @@
+#!/bin/bash
+echo "=== Testing TX/RX Communication ==="
+echo ""
+echo "This test will check if ESP32-CAM can send data to Raspberry Pi"
+echo ""
+echo "Please:"
+echo "  1. Make sure GPIO0 is DISCONNECTED from GND"
+echo "  2. Press RESET button on ESP32-CAM"
+echo "  3. The board should boot normally and send boot messages"
+echo ""
+read -p "Press Enter after you've pressed RESET (GPIO0 NOT grounded)..."
+echo ""
+echo "Listening for boot messages (5 seconds)..."
+stty -F /dev/ttyUSB1 115200
+timeout 5 cat /dev/ttyUSB1
+echo ""
+echo ""
+echo "Did you see any text output above?"
+echo "  YES = TX wire is connected correctly"
+echo "  NO  = TX wire problem or wrong baud rate"
