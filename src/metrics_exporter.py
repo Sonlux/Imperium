@@ -146,6 +146,14 @@ cam_enabled = Gauge(
     registry=REGISTRY,
 )
 
+# IoT node enabled state (controller-side)
+node_enabled = Gauge(
+    "node_enabled",
+    "Whether the IoT node is currently enabled (1=on 0=off)",
+    ["node_id"],
+    registry=REGISTRY,
+)
+
 # Map resolution names to numeric indices for Grafana
 RESOLUTION_INDEX = {
     'QQVGA': 0, 'QVGA': 3, 'CIF': 4, 'VGA': 6, 'SVGA': 7,
@@ -301,6 +309,81 @@ def record_camera_state(device: str, **kwargs):
         cam_brightness.labels(device=device).set(kwargs['brightness'])
     if 'enabled' in kwargs:
         cam_enabled.labels(device=device).set(1 if kwargs['enabled'] else 0)
+
+
+def record_node_state(node_id: str, enabled: bool):
+    """Update the node_enabled gauge for a given IoT node.
+
+    Called by the device enforcer whenever a node is enabled or disabled
+    via an intent.  Also called on startup to seed initial state.
+
+    Args:
+        node_id  – device identifier matching the MQTT topic, e.g. 'iot-node-1'
+        enabled  – True if the node is active, False if disabled
+    """
+    node_enabled.labels(node_id=node_id).set(1 if enabled else 0)
+
+
+def seed_initial_metrics(devices_cfg: dict, cam_device: str = "esp32-cam-1"):
+    """Pre-populate every per-device gauge with the **real default values**
+    from ``devices.yaml`` so Grafana panels show meaningful data even
+    before the first intent is submitted.
+
+    Args:
+        devices_cfg – the ``devices:`` dict straight from devices.yaml,
+                      keyed by device-id with sub-keys ``network``,
+                      ``priority_level``, etc.
+        cam_device  – device id of the ESP32-CAM node.
+    """
+    seeded = 0
+    for dev, cfg in devices_cfg.items():
+        # Skip non-device entries (qos profiles, type definitions)
+        if not isinstance(cfg, dict) or 'network' not in cfg:
+            continue
+
+        net = cfg.get('network', {})
+        max_bw = net.get('max_bandwidth', '0bps')
+        min_lat = net.get('min_latency', '0ms')
+        prio = cfg.get('priority_level', 0)
+
+        # TC traffic counters start at zero (no traffic yet — that's truthful)
+        tc_bytes.labels(device=dev).set(0)
+        tc_packets.labels(device=dev).set(0)
+        tc_dropped.labels(device=dev).set(0)
+        tc_overlimits.labels(device=dev).set(0)
+
+        # Configured policy values: seed with the device's own defaults
+        tc_rate_bps.labels(device=dev).set(_parse_rate_to_bps(max_bw))
+        tc_delay_ms.labels(device=dev).set(_parse_delay_to_ms(min_lat))
+        tc_priority.labels(device=dev).set(prio)
+
+        seeded += 1
+
+    # ── Camera controller-side mirrors ────────────────────────────────
+    cam_cfg = devices_cfg.get(cam_device, {})
+    res_name = cam_cfg.get('default_resolution', 'SVGA')
+    res_idx = RESOLUTION_INDEX.get(res_name.upper(), 7)  # SVGA = 7
+    brightness = cam_cfg.get('default_brightness', 0)
+
+    cam_resolution.labels(device=cam_device).set(res_idx)
+    cam_brightness.labels(device=cam_device).set(brightness)
+    cam_enabled.labels(device=cam_device).set(1)  # camera is ON
+
+    # ── Counter label-set initialisation (creates series at 0) ───────
+    for ptype in ("bandwidth", "latency", "priority", "device_control"):
+        for status in ("success", "failure"):
+            enforcement_total.labels(policy_type=ptype, status=status)
+    device_enforcement_total.labels(
+        policy_type="device_control", device=cam_device, status="success"
+    )
+
+    # ── Histogram: just touch the label so Prometheus sees it ────────
+    enforcement_latency.labels(policy_type="bandwidth")
+
+    logger.info(
+        f"Seeded initial metrics for {seeded} devices "
+        f"(camera={cam_device} res={res_name}/{res_idx} bright={brightness})"
+    )
 
 
 def start_metrics_server(port: int = 8000):

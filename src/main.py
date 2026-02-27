@@ -20,7 +20,12 @@ from intent_manager.api import app as flask_app, intent_manager
 from enforcement.network import NetworkEnforcer
 from enforcement.device import DeviceEnforcer
 from feedback.monitor import FeedbackEngine
-from metrics_exporter import MetricsCollector, start_metrics_server
+from metrics_exporter import (
+    MetricsCollector,
+    start_metrics_server,
+    record_node_state,
+    seed_initial_metrics,
+)
 
 # Setup logging
 logging.basicConfig(
@@ -145,6 +150,16 @@ class ImperiumController:
             )
             self.metrics_collector.start()
             logger.info(f"✓ Prometheus metrics on :{metrics_port}/metrics")
+
+            # Seed ALL per-device gauges and counter labels so every
+            # Grafana panel shows data (real defaults) even before the first
+            # intent is submitted.
+            devices_cfg = self.config.get('devices', {}).get('devices', {})
+            seed_initial_metrics(devices_cfg)
+            for dev_id, dev_cfg in devices_cfg.items():
+                if isinstance(dev_cfg, dict) and 'network' in dev_cfg:
+                    record_node_state(dev_id, enabled=True)
+            logger.info(f"✓ Seeded metrics for registered devices")
         except Exception as e:
             logger.error(f"Failed to start metrics exporter: {e}")
 

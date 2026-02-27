@@ -71,7 +71,8 @@
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "title": "Avg Enforcement Latency",
       "type": "stat",
-      "targets": [{ "expr": "sum(rate(ibs_policy_enforcement_latency_seconds_sum[5m])) / sum(rate(ibs_policy_enforcement_latency_seconds_count[5m]))", "legendFormat": "avg" }]
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "expr": "sum(rate(ibs_policy_enforcement_latency_seconds_sum[5m])) / clamp_min(sum(rate(ibs_policy_enforcement_latency_seconds_count[5m])), 1e-10) * (sum(rate(ibs_policy_enforcement_latency_seconds_count[5m])) > 0)", "legendFormat": "avg" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "ffaxnsjzvkkjkf" },
@@ -293,30 +294,6 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
-      "id": 105,
-      "title": "🖧 IoT Node States",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "ffaxnsjzvkkjkf" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "thresholds" },
-          "thresholds": { "steps": [{"color":"red","value":null},{"color":"green","value":1}] },
-          "mappings": [{"options":{"0":{"text":"DISABLED","color":"red"},"1":{"text":"ENABLED","color":"green"}},"type":"value"}]
-        }
-      },
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 45 },
-      "id": 50,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal" },
-      "title": "IoT Node Enabled States",
-      "type": "stat",
-      "targets": [
-        { "expr": "node_enabled", "legendFormat": "{{node_id}}" }
-      ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 50 },
       "id": 106,
       "title": "🔄 Enforcement Operations",
       "type": "row"
@@ -326,19 +303,19 @@
       "fieldConfig": {
         "defaults": { "unit": "s", "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 15, "spanNulls": true } }
       },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 51 },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 45 },
       "id": 40,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi" } },
       "title": "Enforcement Latency",
       "type": "timeseries",
-      "targets": [{ "expr": "sum(rate(ibs_policy_enforcement_latency_seconds_sum[5m])) / sum(rate(ibs_policy_enforcement_latency_seconds_count[5m]))", "legendFormat": "avg latency" }]
+      "targets": [{ "expr": "sum(rate(ibs_policy_enforcement_latency_seconds_sum[5m])) / clamp_min(sum(rate(ibs_policy_enforcement_latency_seconds_count[5m])), 1e-10) * (sum(rate(ibs_policy_enforcement_latency_seconds_count[5m])) > 0)", "legendFormat": "avg latency" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "ffaxnsjzvkkjkf" },
       "fieldConfig": {
         "defaults": { "unit": "ops", "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 20, "drawStyle": "bars", "spanNulls": true } }
       },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 51 },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 45 },
       "id": 41,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
       "title": "Enforcement Operations by Type",
@@ -350,7 +327,7 @@
       "fieldConfig": {
         "defaults": { "unit": "ops", "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 20, "drawStyle": "bars", "spanNulls": true } }
       },
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 58 },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 52 },
       "id": 51,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
       "title": "Device Enforcement Operations",
