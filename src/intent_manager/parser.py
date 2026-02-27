@@ -21,12 +21,14 @@ class IntentParser:
                 (r'priority\s+(\d+)', 'priority_level')
             ],
             'bandwidth': [
-                (r'limit\s+bandwidth\s+(?:for\s+)?(?:\S+\s+)?(?:to\s+)?(\d+)\s*(mbps|kbps|gbps)?', 'bandwidth_limit'),
-                (r'bandwidth\s+(?:limit\s+)?(?:to\s+)?(\d+)\s*(mbps|kbps|gbps)?', 'bandwidth_limit'),
-                (r'allocate\s+(\d+)\s*(mbps|kbps|gbps)?\s+(?:to|for)\s+(\S+)', 'bandwidth_allocation'),
+                (r'limit\s+bandwidth\s+(?:for\s+)?(?:\S+\s+)?(?:to\s+)?(\d+)\s*(mbps|mbit|kbps|kbit|gbps|gbit)?', 'bandwidth_limit'),
+                (r'bandwidth\s+(?:limit\s+)?(?:to\s+)?(\d+)\s*(mbps|mbit|kbps|kbit|gbps|gbit)?', 'bandwidth_limit'),
+                (r'allocate\s+(\d+)\s*(mbps|mbit|kbps|kbit|gbps|gbit)?\s+(?:to|for)\s+(\S+)', 'bandwidth_allocation'),
                 (r'throttle\s+(\S+)\s+(?:to\s+)?(\d+)', 'throttle')
             ],
             'latency': [
+                (r'(?:add|set|inject)\s+(?:latency|delay)\s+(?:of\s+)?(?:to\s+)?(\d+)\s*ms', 'latency_inject'),
+                (r'latency\s+(?:of\s+)?(\d+)\s*ms', 'latency_inject'),
                 (r'reduce\s+latency\s+(?:to\s+)?(\d+)\s*ms', 'latency_target'),
                 (r'latency\s+(?:below|under)\s+(\d+)', 'latency_threshold'),
                 (r'minimize\s+latency\s+(?:for\s+)?(\S+)?', 'low_latency')

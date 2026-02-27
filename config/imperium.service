@@ -12,7 +12,7 @@ Environment="PATH=/home/imperium/Imperium/venv/bin:/usr/local/sbin:/usr/local/bi
 Environment="PYTHONPATH=/home/imperium/Imperium"
 Environment="PYTHONUNBUFFERED=1"
 Environment="FLASK_ENV=production"
-Environment="NETWORK_INTERFACE=eth0"
+Environment="NETWORK_INTERFACE=wlan0"
 
 # Ensure database and log directories exist
 ExecStartPre=/bin/mkdir -p /home/imperium/Imperium/data

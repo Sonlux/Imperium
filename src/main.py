@@ -20,6 +20,7 @@ from intent_manager.api import app as flask_app, intent_manager
 from enforcement.network import NetworkEnforcer
 from enforcement.device import DeviceEnforcer
 from feedback.monitor import FeedbackEngine
+from metrics_exporter import MetricsCollector, start_metrics_server
 
 # Setup logging
 logging.basicConfig(
@@ -41,6 +42,7 @@ class ImperiumController:
         self.network_enforcer: Optional[NetworkEnforcer] = None
         self.device_enforcer: Optional[DeviceEnforcer] = None
         self.feedback_engine: Optional[FeedbackEngine] = None
+        self.metrics_collector: Optional[MetricsCollector] = None
         
         # Threads
         self.feedback_thread: Optional[threading.Thread] = None
@@ -130,7 +132,22 @@ class ImperiumController:
         intent_manager.device_enforcer = self.device_enforcer
         intent_manager.feedback_engine = self.feedback_engine
         logger.info("✓ Components integrated")
-        
+
+        # 5. Prometheus metrics exporter
+        logger.info("Starting Prometheus metrics exporter...")
+        try:
+            metrics_port = int(os.getenv('METRICS_PORT', '8000'))
+            start_metrics_server(port=metrics_port)
+            self.metrics_collector = MetricsCollector(
+                network_enforcer=self.network_enforcer,
+                intent_manager=intent_manager,
+                poll_interval=5.0,
+            )
+            self.metrics_collector.start()
+            logger.info(f"✓ Prometheus metrics on :{metrics_port}/metrics")
+        except Exception as e:
+            logger.error(f"Failed to start metrics exporter: {e}")
+
         logger.info("=" * 60)
         logger.info("All components initialized successfully!")
         logger.info("=" * 60)

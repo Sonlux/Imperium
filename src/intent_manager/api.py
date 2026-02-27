@@ -150,18 +150,43 @@ class IntentManager:
             logger.info(f"Enforcing policy: {enforce_policy}")
             
             # Apply via device enforcer (MQTT) - includes ESP32 controls
-            if self.device_enforcer and policy_type in ['qos_control', 'device_config', 'sample_rate', 'sampling_interval', 'audio_gain', 'publish_interval']:
+            if self.device_enforcer and policy_type in [
+                    'qos_control', 'device_config', 'device_control',
+                    'sample_rate', 'sampling_interval',
+                    'audio_gain', 'publish_interval',
+                    'camera_resolution', 'camera_quality', 'camera_brightness',
+                    'camera_framerate', 'camera_control']:
                 try:
+                    import time as _time
+                    _t0 = _time.time()
                     success = self.device_enforcer.apply_policy(enforce_policy)
-                    logger.info(f"Device enforcement {'succeeded' if success else 'failed'}")
+                    _dur = _time.time() - _t0
+                    logger.info(f"Device enforcement {'succeeded' if success else 'failed'} ({_dur:.3f}s)")
+                    try:
+                        from metrics_exporter import record_enforcement
+                        record_enforcement(policy_type, success, _dur)
+                    except ImportError:
+                        pass
                 except Exception as e:
                     logger.error(f"Device enforcement error: {e}")
             
-            # Apply via network enforcer (tc)
-            if self.network_enforcer and policy_type in ['bandwidth', 'latency', 'traffic_shaping']:
+            # Apply via network enforcer (tc) — accept all network policy type variants
+            if self.network_enforcer and policy_type in [
+                    'bandwidth_limit', 'bandwidth',
+                    'latency_control', 'latency',
+                    'traffic_shaping', 'routing_priority', 'priority']:
                 try:
+                    import time as _time
+                    _t0 = _time.time()
                     success = self.network_enforcer.apply_policy(enforce_policy)
-                    logger.info(f"Network enforcement {'succeeded' if success else 'failed'}")
+                    _dur = _time.time() - _t0
+                    logger.info(f"Network enforcement {'succeeded' if success else 'failed'} ({_dur:.3f}s)")
+                    # Record metrics if exporter available
+                    try:
+                        from metrics_exporter import record_enforcement
+                        record_enforcement(policy_type, success, _dur)
+                    except ImportError:
+                        pass
                 except Exception as e:
                     logger.error(f"Network enforcement error: {e}")
     
@@ -280,6 +305,33 @@ def list_policies():
     # Fall back to in-memory
     policies = intent_manager.policy_engine.get_policies()
     return jsonify({'policies': policies, 'count': len(policies)})
+
+
+@app.route('/api/v1/network/status', methods=['GET'])
+@rate_limiter.limit('default')
+@auth_manager.require_auth
+def network_status():
+    """Return live tc rules and per-device active policies"""
+    if not intent_manager.network_enforcer:
+        return jsonify({'error': 'Network enforcer not initialized'}), 503
+    status = intent_manager.network_enforcer.get_status()
+    stats = intent_manager.network_enforcer.collect_tc_stats()
+    return jsonify({'network': status, 'tc_stats': stats})
+
+
+@app.route('/api/v1/network/clear', methods=['POST'])
+@rate_limiter.limit('intents')
+@auth_manager.require_auth
+def network_clear():
+    """Clear all tc rules"""
+    if not intent_manager.network_enforcer:
+        return jsonify({'error': 'Network enforcer not initialized'}), 503
+    device = request.args.get('device')
+    if device:
+        ok = intent_manager.network_enforcer.clear_device(device)
+    else:
+        ok = intent_manager.network_enforcer.clear_all()
+    return jsonify({'success': ok})
 
 
 if __name__ == '__main__':

@@ -790,7 +790,7 @@ def live_iot_status():
                 print(f"  • Export Prometheus metrics on ports 8001-8010")
             else:
                 print_warning("No IoT nodes running")
-                print_info("Start with: docker compose up -d --scale iot-node=10")
+                print_info("Start with: docker compose up -d (from the Imperium directory)")
             
             # MQTT broker status
             result = subprocess.run(
@@ -940,9 +940,9 @@ def iot_node_menu():
             except:
                 print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - OFFLINE")
             
-            # CO2 sensor node
+            # CO2 sensor node (same ESP32 dual-node at .218)
             try:
-                response = requests.get("http://10.218.189.206:8080/metrics", timeout=2)
+                response = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
                 if response.status_code == 200:
                     # Extract CO2 value
                     co2_val = "--"
@@ -1013,10 +1013,10 @@ def iot_node_menu():
                         elif 'audio_gain_multiplier{' in line and not line.startswith('#'):
                             val = line.split('}')[1].strip()
                             print(f"    Audio Gain: {val}x")
-                        elif 'telemetry_publish_interval_ms{' in line and not line.startswith('#'):
+                        elif 'audio_publish_interval_ms{' in line and not line.startswith('#'):
                             val = line.split('}')[1].strip()
                             print(f"    Publish Interval: {float(val)/1000}s")
-                        elif 'mqtt_qos_level{' in line and not line.startswith('#'):
+                        elif 'audio_qos_level{' in line and not line.startswith('#'):
                             val = line.split('}')[1].strip()
                             print(f"    QoS Level: {val}")
                         elif 'audio_frames_captured_total{' in line and not line.startswith('#'):
@@ -1027,11 +1027,11 @@ def iot_node_menu():
             except:
                 print(f"  {Colors.RED}○ esp32-audio-1{Colors.END} - UNREACHABLE")
             
-            # Check ESP32 CO2 sensor
+            # Check ESP32 CO2 sensor (same dual-node at .218)
             try:
-                response = requests.get("http://10.218.189.206:8080/metrics", timeout=2)
+                response = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
                 if response.status_code == 200:
-                    print(f"  {Colors.GREEN}● esp32-mhz19-1{Colors.END} - http://10.218.189.206:8080/metrics")
+                    print(f"  {Colors.GREEN}● esp32-mhz19-1{Colors.END} - http://10.218.189.218:8080/metrics")
                     # Parse and show key metrics
                     for line in response.text.split('\n'):
                         if 'co2_ppm{' in line and not line.startswith('#'):
@@ -1079,20 +1079,27 @@ def iot_node_menu():
             input("\nPress Enter to continue...")
         elif choice == '9':
             print_header("Start More Nodes")
-            count = input(f"{Colors.CYAN}How many nodes to start (1-20):{Colors.END} ").strip()
-            if count.isdigit() and 1 <= int(count) <= 20:
-                print_info(f"Starting {count} nodes...")
-                os.system(f"cd /home/imperium/Imperium && docker compose up -d --scale iot-node={count}")
-                print_success(f"Started {count} nodes")
+            count = input(f"{Colors.CYAN}How many nodes to start (1-10):{Colors.END} ").strip()
+            if count.isdigit() and 1 <= int(count) <= 10:
+                services = " ".join([f"iot-node-{i}" for i in range(1, int(count)+1)])
+                print_info(f"Starting {count} node(s)...")
+                os.system(f"cd /home/imperium/Imperium && docker compose up -d {services}")
+                print_success(f"Started {count} node(s)")
             else:
-                print_error("Invalid number")
+                print_error("Invalid number (must be 1-10)")
             input("\nPress Enter to continue...")
         elif choice == '10':
             print_header("Stop All Nodes")
             confirm = input(f"{Colors.CYAN}Stop all IoT nodes? (y/n):{Colors.END} ").strip().lower()
             if confirm == 'y':
-                os.system("docker compose stop iot-node")
-                print_success("All IoT nodes stopped")
+                result = subprocess.run(
+                    "docker stop $(docker ps --filter 'name=imperium-iot-node' -q) 2>&1",
+                    shell=True, capture_output=True, text=True
+                )
+                if result.returncode == 0 or 'requires at least 1 argument' not in result.stderr:
+                    print_success("All IoT nodes stopped")
+                else:
+                    print_warning("No running IoT nodes found")
             input("\nPress Enter to continue...")
 
 def send_mqtt_control_message():
@@ -1119,11 +1126,11 @@ def send_mqtt_control_message():
     except:
         pass
     
-    # Add ESP32 CO2 sensor if online
+    # Add ESP32 CO2 sensor if online (same dual-node at .218)
     esp32_co2_online = False
     try:
-        resp = requests.get("http://10.218.189.206:8080/metrics", timeout=2)
-        if resp.status_code == 200:
+        resp = requests.get("http://10.218.189.218:8080/metrics", timeout=2)
+        if resp.status_code == 200 and 'co2_ppm' in resp.text:
             esp32_co2_online = True
             nodes.append("esp32-mhz19-1")
     except:
@@ -1192,7 +1199,7 @@ def send_mqtt_control_message():
     
     # Send via mosquitto_pub
     topic = f"iot/{node_id}/control"
-    cmd = f"docker exec imperium-mqtt-1 mosquitto_pub -t '{topic}' -m '{message}'"
+    cmd = f"docker exec imperium-mqtt mosquitto_pub -t '{topic}' -m '{message}'"
     
     print(f"\n{Colors.YELLOW}Sending to topic: {topic}{Colors.END}")
     print(f"{Colors.YELLOW}Message: {message}{Colors.END}")
@@ -1200,7 +1207,9 @@ def send_mqtt_control_message():
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.returncode == 0:
         print_success("Message sent successfully!")
-        if node.startswith('esp32'):
+        if node == 'esp32-cam-1':
+            print_info("Wait 3 seconds, then check metrics: http://10.218.189.80/metrics")
+        elif node.startswith('esp32'):
             print_info("Wait 3 seconds, then check metrics: http://10.218.189.218:8080/metrics")
         else:
             print_info("Check node logs to see if it was received")
@@ -1301,10 +1310,13 @@ def live_full_dashboard():
             nodes = result.stdout.strip().split('\n') if result.stdout.strip() else []
             
             node_str = "  ".join([f"{Colors.GREEN}●{Colors.END}" for _ in nodes[:10]])
-            if len(nodes) > 10:
-                node_str += f"  +{len(nodes)-10} more"
-            print(f"│ {node_str:74} │")
-            print(f"│ Total: {Colors.GREEN}{len(nodes)}{Colors.END} nodes active                                                      │")
+            extra = f"  +{len(nodes)-10} more" if len(nodes) > 10 else ""
+            # Calculate visual width (ANSI codes are invisible) and pad manually
+            num_dots = min(len(nodes), 10)
+            vis_len = num_dots + max(0, num_dots - 1) * 2 + len(extra)
+            padding = max(0, 75 - vis_len)
+            print(f"│ {node_str}{extra}{' ' * padding} │")
+            print(f"│ Total: {Colors.GREEN}{len(nodes)}{Colors.END} nodes active{' ' * 63} │")
             print(f"{Colors.CYAN}└─────────────────────────────────────────────────────────────────────────────┘{Colors.END}")
             
             # Row 3: Database & Intents
@@ -1496,93 +1508,156 @@ def show_system_status():
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────┘{Colors.END}")
 
 def run_demo_sequence():
-    """Run the full demo sequence automatically"""
-    print_header("Running Full Demo Sequence")
-    
+    """Run the full demo sequence — showcases all node types and intent categories"""
+    print_header("Imperium Full Demo — All Node Types")
+
     # Step 1: Health check
-    print(f"\n{Colors.BOLD}Step 1: Health Check{Colors.END}")
+    print(f"\n{Colors.BOLD}Step 1/7: Health Check{Colors.END}")
     check_health()
     input("\nPress Enter to continue...")
-    
+
     # Step 2: Login
-    print(f"\n{Colors.BOLD}Step 2: Authentication{Colors.END}")
+    print(f"\n{Colors.BOLD}Step 2/7: Authentication{Colors.END}")
     login()
     input("\nPress Enter to continue...")
-    
-    # Step 3: Submit intents
-    print(f"\n{Colors.BOLD}Step 3: Submit Demo Intents{Colors.END}")
-    demo_intents = [
-        "prioritize node-1 and limit bandwidth to 50KB/s for node-2",
-        "reduce latency to 20ms for node-3 and node-4",
-        "set QoS level 2 for node-5 through node-10"
+
+    # Step 3: Simulated IoT nodes
+    print(f"\n{Colors.BOLD}Step 3/7: Simulated IoT Nodes{Colors.END}")
+    print(f"{Colors.DIM}  10 Docker nodes (node-1 to node-10) — QoS, device control{Colors.END}")
+    sim_intents = [
+        ("QoS control",       "set qos level 2 for node-1"),
+        ("Enable device",     "enable device node-5"),
+        ("Priority (network)","prioritize node-1"),
     ]
-    
-    for i, intent in enumerate(demo_intents, 1):
-        print(f"\n{Colors.YELLOW}Intent {i}:{Colors.END} {intent}")
+    for label, intent in sim_intents:
+        print(f"\n  {Colors.YELLOW}[{label}]{Colors.END} {intent}")
         submit_intent(intent)
-        input("\nPress Enter to continue...")
-    
-    # Step 4: List intents
-    print(f"\n{Colors.BOLD}Step 4: View All Intents{Colors.END}")
-    list_intents()
+        time.sleep(0.5)
     input("\nPress Enter to continue...")
-    
-    # Step 5: Network status
-    print(f"\n{Colors.BOLD}Step 5: Network Enforcement{Colors.END}")
+
+    # Step 4: CO2 sensor
+    print(f"\n{Colors.BOLD}Step 4/7: ESP32 CO₂ Sensor (esp32-mhz19-1){Colors.END}")
+    print(f"{Colors.DIM}  IP 10.218.189.218 — sampling, QoS, TC bandwidth/latency/priority{Colors.END}")
+    co2_intents = [
+        ("Sampling interval", "set sampling interval for esp32-mhz19-1 to 10 seconds"),
+        ("QoS level 2",       "set qos level 2 for esp32-mhz19-1"),
+        ("Bandwidth limit",   "limit bandwidth to 1mbit for esp32-mhz19-1"),
+        ("Latency injection", "add latency of 50ms for esp32-mhz19-1"),
+    ]
+    for label, intent in co2_intents:
+        print(f"\n  {Colors.YELLOW}[{label}]{Colors.END} {intent}")
+        submit_intent(intent)
+        time.sleep(0.5)
+    input("\nPress Enter to continue...")
+
+    # Step 5: Audio node
+    print(f"\n{Colors.BOLD}Step 5/7: ESP32 Audio Node (esp32-audio-1){Colors.END}")
+    print(f"{Colors.DIM}  IP 10.218.189.218 — sample rate, gain, publish interval{Colors.END}")
+    audio_intents = [
+        ("Sample rate 48kHz", "set sample rate to 48000 hz for esp32-audio-1"),
+        ("Audio gain 2x",     "amplify audio by 2x for esp32-audio-1"),
+        ("Publish every 5s",  "send data every 5 seconds for esp32-audio-1"),
+    ]
+    for label, intent in audio_intents:
+        print(f"\n  {Colors.YELLOW}[{label}]{Colors.END} {intent}")
+        submit_intent(intent)
+        time.sleep(0.5)
+    input("\nPress Enter to continue...")
+
+    # Step 6: ESP32-CAM
+    print(f"\n{Colors.BOLD}Step 6/7: ESP32-CAM (esp32-cam-1){Colors.END}")
+    print(f"{Colors.DIM}  IP 10.218.189.80 — resolution, quality, framerate, TC rules{Colors.END}")
+    cam_intents = [
+        ("Resolution VGA",    "set resolution to VGA for esp32-cam-1"),
+        ("Quality 10",        "set camera quality to 10 for esp32-cam-1"),
+        ("Brightness +1",     "set camera brightness to 1 for esp32-cam-1"),
+        ("Capture every 3s",  "capture every 3 seconds for esp32-cam-1"),
+        ("Bandwidth 2mbit",   "limit bandwidth to 2mbit for esp32-cam-1"),
+        ("High priority",     "set high priority for esp32-cam-1"),
+    ]
+    for label, intent in cam_intents:
+        print(f"\n  {Colors.YELLOW}[{label}]{Colors.END} {intent}")
+        submit_intent(intent)
+        time.sleep(0.5)
+    input("\nPress Enter to continue...")
+
+    # Step 7: Network enforcement summary
+    print(f"\n{Colors.BOLD}Step 7/7: Network Enforcement Status{Colors.END}")
     show_network_status()
-    
-    print_success("\nDemo sequence complete!")
+
+    print_success("\n  Demo complete! All intent types demonstrated across all node types.")
+    print_info("  Open Grafana at http://localhost:3000 to see live dashboards.")
 
 # ============== Predefined Intents ==============
 
 EXAMPLE_INTENTS = [
-    # Simulated IoT Node Intents
-    "prioritize node-1",
-    "limit bandwidth to 100KB/s for node-2",
-    "reduce latency to 10ms for node-3",
-    "set QoS level 2 for node-4",
-    "prioritize node-1 through node-5",
-    "limit bandwidth to 50KB/s for node-6 and node-7",
-    "reduce latency for node-8 and node-9",
-    "set high priority for node-10",
-    
-    # ESP32 Audio Node Intents
-    "set sample rate to 48000 hz for esp32-audio-1",
-    "set audio gain to 2.5 for esp32-audio-1",
-    "set publish interval to 5 seconds for esp32-audio-1",
-    "set sample rate to 8000 hz for esp32-audio-1",
-    "set audio gain to 0.5 for esp32-audio-1",
-    "set QoS level 2 for esp32-audio-1",
-    
-    # ESP32-CAM Node Intents
-    "set resolution to VGA for esp32-cam-1",
-    "set quality to 15 for esp32-cam-1",
-    "set brightness to 1 for esp32-cam-1",
-    "set capture interval to 3 seconds for esp32-cam-1",
-    "set resolution to HD for esp32-cam-1",
-    "disable camera for esp32-cam-1",
-    
-    # ESP32 CO2 Sensor (MH-Z19) Intents
-    "set sampling interval for mhz19-01 to 5 seconds",
-    "read co2 every 10 seconds for mhz19-01",
-    "set sampling interval for mhz19-01 to 30 seconds",
-    "set QoS level 2 for esp32-mhz19-1",
-    "prioritize esp32-mhz19-1",
-    "limit bandwidth for mhz19-01 to 50 kbps",
+    # ── Simulated IoT Nodes (node-1 to node-10, Docker) ──
+    "set qos level 2 for node-1",                       # 1  QoS control
+    "reliable delivery for node-3",                      # 2  QoS reliable
+    "enable device node-5",                              # 3  Device enable
+    "disable node-2",                                    # 4  Device disable
+    "reset device node-7",                               # 5  Device reset
+    "prioritize node-1",                                 # 6  Priority (network)
+    "set high priority for node-10",                     # 7  High priority
+
+    # ── ESP32 CO₂ Sensor (esp32-mhz19-1) ──
+    "set sampling interval for esp32-mhz19-1 to 30 seconds",  # 8  Sampling
+    "read co2 every 10 seconds for esp32-mhz19-1",            # 9  Sampling alt
+    "set qos level 2 for esp32-mhz19-1",                      # 10 QoS
+    "reset esp32-mhz19-1",                                     # 11 Device reset
+    "limit bandwidth to 1mbit for esp32-mhz19-1",             # 12 Bandwidth (TC)
+    "add latency of 50ms for esp32-mhz19-1",                  # 13 Latency (TC)
+    "set high priority for esp32-mhz19-1",                     # 14 Priority (TC)
+
+    # ── ESP32 Audio Node (esp32-audio-1) ──
+    "set sample rate to 48000 hz for esp32-audio-1",    # 15 Sample rate
+    "16 khz sampling for esp32-audio-1",                # 16 Sample rate alt
+    "set audio gain to 3.5 for esp32-audio-1",          # 17 Audio gain
+    "amplify audio by 2x for esp32-audio-1",            # 18 Audio gain alt
+    "send data every 5 seconds for esp32-audio-1",      # 19 Publish interval
+    "qos level 1 for esp32-audio-1",                    # 20 QoS
+    "disable esp32-audio-1",                            # 21 Device disable
+    "enable esp32-audio-1",                             # 22 Device enable
+    "limit bandwidth to 500kbit for esp32-audio-1",     # 23 Bandwidth (TC)
+
+    # ── ESP32-CAM Node (esp32-cam-1) ──
+    "set resolution to VGA for esp32-cam-1",            # 24 Resolution
+    "change to HD resolution for esp32-cam-1",          # 25 Resolution alt
+    "set resolution to UXGA for esp32-cam-1",           # 26 Resolution UXGA
+    "set camera quality to 10 for esp32-cam-1",         # 27 Quality numeric
+    "set camera quality to 5 for esp32-cam-1",          # 28 Quality high
+    "set camera brightness to 1 for esp32-cam-1",       # 29 Brightness
+    "set camera fps to 5 for esp32-cam-1",              # 30 Framerate
+    "capture every 3 seconds for esp32-cam-1",          # 31 Capture interval
+    "disable camera for esp32-cam-1",                   # 32 Camera disable
+    "enable camera for esp32-cam-1",                    # 33 Camera enable
+    "set qos level 2 for esp32-cam-1",                  # 34 QoS
+    "limit bandwidth to 2mbit for esp32-cam-1",         # 35 Bandwidth (TC)
+    "add latency of 100ms for esp32-cam-1",             # 36 Latency (TC)
+    "set high priority for esp32-cam-1",                # 37 Priority (TC)
+    "minimize latency for esp32-cam-1",                 # 38 Low latency (TC)
 ]
 
 def submit_example_intent():
     """Show example intents and submit selected one"""
-    print_header("Example Intents")
-    
-    for i, intent in enumerate(EXAMPLE_INTENTS, 1):
-        print(f"  {i}. {intent}")
-    
-    print(f"\n  0. Enter custom intent")
-    print(f"  q. Back to main menu")
-    
+    print_header("Example Intents — All 38 Verified Working")
+
+    categories = [
+        ("Simulated IoT Nodes (node-1 to node-10)", 0, 7),
+        ("ESP32 CO₂ Sensor (esp32-mhz19-1)", 7, 14),
+        ("ESP32 Audio Node (esp32-audio-1)", 14, 23),
+        ("ESP32-CAM Node (esp32-cam-1)", 23, 38),
+    ]
+    for cat_name, start, end in categories:
+        print(f"\n  {Colors.BOLD}{Colors.YELLOW}{cat_name}{Colors.END}")
+        for i in range(start, end):
+            print(f"    {i+1:2}. {EXAMPLE_INTENTS[i]}")
+
+    print(f"\n   0. Enter custom intent")
+    print(f"   q. Back to main menu")
+
     choice = input(f"\n{Colors.CYAN}Select intent (1-{len(EXAMPLE_INTENTS)}):{Colors.END} ").strip()
-    
+
     if choice.lower() == 'q':
         return
     elif choice == '0':
@@ -1678,23 +1753,27 @@ def main_menu():
                 print_info("Logging in first...")
                 login()
             print(f"\n{Colors.DIM}Simulated IoT Nodes (node-1 through node-10):{Colors.END}")
+            print(f"  - set qos level 2 for node-1")
+            print(f"  - enable device node-5  /  disable node-2  /  reset device node-7")
             print(f"  - prioritize node-1")
-            print(f"  - limit bandwidth to 50KB/s for node-2")
-            print(f"  - reduce latency to 10ms for node-3")
-            print(f"  - set QoS level 2 for node-4 and node-5")
-            print(f"\n{Colors.DIM}ESP32 Audio Node (esp32-audio-1):{Colors.END}")
+            print(f"\n{Colors.DIM}ESP32 CO₂ Sensor (esp32-mhz19-1, IP 10.218.189.218):{Colors.END}")
+            print(f"  - set sampling interval for esp32-mhz19-1 to 30 seconds")
+            print(f"  - limit bandwidth to 1mbit for esp32-mhz19-1")
+            print(f"  - add latency of 50ms for esp32-mhz19-1")
+            print(f"\n{Colors.DIM}ESP32 Audio Node (esp32-audio-1, IP 10.218.189.218):{Colors.END}")
             print(f"  - set sample rate to 48000 hz for esp32-audio-1")
             print(f"  - set audio gain to 2.5 for esp32-audio-1")
-            print(f"  - set telemetry rate to 5 seconds for esp32-audio-1")
             print(f"  - amplify audio by 3x for esp32-audio-1")
-            print(f"  - report telemetry every 2 seconds for esp32-audio-1")
-            
-            print(f"\n{Colors.DIM}ESP32-CAM Node (esp32-cam-1):{Colors.END}")
+            print(f"  - send data every 5 seconds for esp32-audio-1")
+
+            print(f"\n{Colors.DIM}ESP32-CAM Node (esp32-cam-1, IP 10.218.189.80):{Colors.END}")
             print(f"  - set resolution to VGA for esp32-cam-1")
-            print(f"  - set quality to 15 for esp32-cam-1")
-            print(f"  - set brightness to 1 for esp32-cam-1")
-            print(f"  - set capture interval to 3 seconds for esp32-cam-1")
-            print(f"  - disable camera for esp32-cam-1")
+            print(f"  - set camera quality to 10 for esp32-cam-1")
+            print(f"  - set camera brightness to 1 for esp32-cam-1")
+            print(f"  - capture every 3 seconds for esp32-cam-1")
+            print(f"  - disable camera for esp32-cam-1  /  enable camera for esp32-cam-1")
+            print(f"  - limit bandwidth to 2mbit for esp32-cam-1")
+            print(f"  - minimize latency for esp32-cam-1")
             
             description = input(f"\n{Colors.CYAN}Enter intent description:{Colors.END} ").strip()
             if description:

@@ -102,6 +102,7 @@ static esp_mqtt_client_handle_t mqtt_client = NULL;
 static httpd_handle_t http_server = NULL;
 static EventGroupHandle_t wifi_event_group;
 static const int WIFI_CONNECTED_BIT = BIT0;
+static volatile int stream_clients = 0;
 
 static const char *TAG = "ESP32-CAM";
 
@@ -183,6 +184,8 @@ void init_camera(void) {
 }
 
 void capture_and_publish_frame(void) {
+    // Don't compete with the MJPEG stream handler for camera frames
+    if (stream_clients > 0) return;
     if (!g_cam_settings.enabled || mqtt_client == NULL) {
         return;
     }
@@ -303,7 +306,12 @@ static void handle_control_message(const char *data, int data_len) {
         
         if (new_res != g_cam_settings.resolution) {
             g_cam_settings.resolution = new_res;
-            if (s) s->set_framesize(s, new_res);
+            if (s) {
+                s->set_framesize(s, new_res);
+                // Allow sensor to stabilize at new resolution (skip 2 frames)
+                camera_fb_t *skip = esp_camera_fb_get(); if (skip) esp_camera_fb_return(skip);
+                skip = esp_camera_fb_get(); if (skip) esp_camera_fb_return(skip);
+            }
             changed = true;
             ESP_LOGI(TAG, "Resolution changed to: %s", res_str);
         }
@@ -355,6 +363,30 @@ static void handle_control_message(const char *data, int data_len) {
         }
     }
     
+    // Contrast control
+    cJSON *contrast = cJSON_GetObjectItem(json, "contrast");
+    if (contrast && cJSON_IsNumber(contrast)) {
+        int new_contrast = contrast->valueint;
+        if (new_contrast >= -2 && new_contrast <= 2 && new_contrast != g_cam_settings.contrast) {
+            g_cam_settings.contrast = new_contrast;
+            if (s) s->set_contrast(s, new_contrast);
+            changed = true;
+            ESP_LOGI(TAG, "Contrast changed to: %d", new_contrast);
+        }
+    }
+
+    // Saturation control
+    cJSON *saturation = cJSON_GetObjectItem(json, "saturation");
+    if (saturation && cJSON_IsNumber(saturation)) {
+        int new_saturation = saturation->valueint;
+        if (new_saturation >= -2 && new_saturation <= 2 && new_saturation != g_cam_settings.saturation) {
+            g_cam_settings.saturation = new_saturation;
+            if (s) s->set_saturation(s, new_saturation);
+            changed = true;
+            ESP_LOGI(TAG, "Saturation changed to: %d", new_saturation);
+        }
+    }
+
     // QoS control
     cJSON *qos = cJSON_GetObjectItem(json, "mqtt_qos");
     if (qos && cJSON_IsNumber(qos)) {
@@ -444,8 +476,93 @@ void publish_telemetry(void) {
 }
 
 // ============================================================================
-// HTTP SERVER (Metrics Endpoint)
+// HTTP SERVER (MJPEG Stream + Snapshot + Metrics)
 // ============================================================================
+
+// MJPEG stream boundary
+#define STREAM_CONTENT_TYPE "multipart/x-mixed-replace;boundary=frame"
+#define STREAM_BOUNDARY     "\r\n--frame\r\n"
+#define STREAM_PART         "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n"
+
+static esp_err_t stream_handler(httpd_req_t *req) {
+    camera_fb_t *fb = NULL;
+    esp_err_t res = ESP_OK;
+    char part_buf[64];
+
+    if (stream_clients >= 2) {
+        httpd_resp_set_status(req, "503 Service Unavailable");
+        httpd_resp_send(req, "Max 2 stream clients", 20);
+        return ESP_FAIL;
+    }
+
+    httpd_resp_set_type(req, STREAM_CONTENT_TYPE);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate");
+
+    stream_clients++;
+    ESP_LOGI(TAG, "Stream client connected (%d active)", stream_clients);
+
+    while (true) {
+        // Respect camera enable/disable state
+        if (!g_cam_settings.enabled) {
+            vTaskDelay(pdMS_TO_TICKS(200));
+            continue;
+        }
+
+        fb = esp_camera_fb_get();
+        if (!fb) {
+            ESP_LOGE(TAG, "Stream: capture failed");
+            res = ESP_FAIL;
+            break;
+        }
+
+        res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
+        if (res != ESP_OK) { esp_camera_fb_return(fb); break; }
+
+        size_t hlen = snprintf(part_buf, sizeof(part_buf), STREAM_PART, fb->len);
+        res = httpd_resp_send_chunk(req, part_buf, hlen);
+        if (res != ESP_OK) { esp_camera_fb_return(fb); break; }
+
+        res = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
+
+        // FPS tracking
+        metrics.frames_captured++;
+        metrics.last_frame_size = fb->len;
+        fps_frame_count++;
+        uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+        if (now - last_fps_calculation >= 1000) {
+            metrics.fps = fps_frame_count * 1000.0f / (now - last_fps_calculation);
+            fps_frame_count = 0;
+            last_fps_calculation = now;
+        }
+
+        esp_camera_fb_return(fb);
+        if (res != ESP_OK) break;
+
+        // Frame pacing: respect capture_interval but cap at 30fps minimum
+        uint32_t delay = g_cam_settings.capture_interval_ms;
+        if (delay < 33) delay = 33;
+        vTaskDelay(pdMS_TO_TICKS(delay));
+    }
+
+    stream_clients--;
+    ESP_LOGI(TAG, "Stream client disconnected (%d active)", stream_clients);
+    return res;
+}
+
+static esp_err_t snapshot_handler(httpd_req_t *req) {
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb) {
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+    httpd_resp_set_type(req, "image/jpeg");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=snapshot.jpg");
+    httpd_resp_send(req, (const char *)fb->buf, fb->len);
+    esp_camera_fb_return(fb);
+    return ESP_OK;
+}
 
 static esp_err_t metrics_handler(httpd_req_t *req) {
     char response[2048];
@@ -487,39 +604,51 @@ static esp_err_t metrics_handler(httpd_req_t *req) {
 }
 
 static esp_err_t root_handler(httpd_req_t *req) {
-    const char *response = 
-        "<html><head><title>ESP32-CAM</title></head><body>"
-        "<h1>ESP32-CAM - esp32-cam-1</h1>"
-        "<p><a href='/metrics'>Prometheus Metrics</a></p>"
-        "<h2>Status</h2>"
-        "<p>Camera: Enabled</p>"
-        "<p><a href='http://localhost:3000'>Grafana Dashboard</a></p>"
-        "</body></html>";
-    
+    char response[1024];
+    snprintf(response, sizeof(response),
+        "<html><head><title>ESP32-CAM Imperium</title>"
+        "<style>body{font-family:sans-serif;margin:2em;background:#111;color:#eee}"
+        "img{max-width:100%%;border:2px solid #444}"
+        "a{color:#4af}h1{color:#7df}</style></head><body>"
+        "<h1>ESP32-CAM &mdash; %s</h1>"
+        "<h2>&#128249; Live Stream</h2>"
+        "<img src='/stream' alt='Live feed'/>"
+        "<p><a href='/stream'>&#9654; Direct stream URL</a> &nbsp;"
+        "<a href='/snapshot'>&#128247; Snapshot</a> &nbsp;"
+        "<a href='/metrics'>&#128200; Metrics</a></p>"
+        "<h2>Current Settings</h2>"
+        "<p>Quality: %d &nbsp; Brightness: %d &nbsp; "
+        "Interval: %" PRIu32 "ms &nbsp; FPS: %.1f</p>"
+        "</body></html>",
+        DEVICE_ID, g_cam_settings.quality, g_cam_settings.brightness,
+        g_cam_settings.capture_interval_ms, metrics.fps);
+    httpd_resp_set_type(req, "text/html");
     httpd_resp_send(req, response, strlen(response));
     return ESP_OK;
 }
 
 void init_http_server(void) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.server_port = 8080;
-    
-    httpd_uri_t root_uri = {
-        .uri = "/",
-        .method = HTTP_GET,
-        .handler = root_handler
-    };
-    
-    httpd_uri_t metrics_uri = {
-        .uri = "/metrics",
-        .method = HTTP_GET,
-        .handler = metrics_handler
-    };
-    
+    config.server_port = 80;
+    config.max_uri_handlers = 8;
+    // Stream handler needs a large stack and long-running connections
+    config.stack_size = 8192;
+    config.recv_wait_timeout = 10;
+    config.send_wait_timeout = 10;
+
+    httpd_uri_t root_uri     = { .uri="/",         .method=HTTP_GET, .handler=root_handler     };
+    httpd_uri_t stream_uri   = { .uri="/stream",   .method=HTTP_GET, .handler=stream_handler   };
+    httpd_uri_t snapshot_uri = { .uri="/snapshot", .method=HTTP_GET, .handler=snapshot_handler };
+    httpd_uri_t metrics_uri  = { .uri="/metrics",  .method=HTTP_GET, .handler=metrics_handler  };
+
     if (httpd_start(&http_server, &config) == ESP_OK) {
         httpd_register_uri_handler(http_server, &root_uri);
+        httpd_register_uri_handler(http_server, &stream_uri);
+        httpd_register_uri_handler(http_server, &snapshot_uri);
         httpd_register_uri_handler(http_server, &metrics_uri);
-        ESP_LOGI(TAG, "HTTP server started on port 8080");
+        ESP_LOGI(TAG, "HTTP server on port 80 — stream: http://%s/stream", DEVICE_ID);
+    } else {
+        ESP_LOGE(TAG, "Failed to start HTTP server");
     }
 }
 

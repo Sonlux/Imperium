@@ -154,6 +154,26 @@
       "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
       "targets": [{"expr": "rate(mqtt_messages_published_total{node_id=~\"$node\"}[1m])*60", "legendFormat": "{{node_id}}", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80, "lineWidth": 0, "stacking": {"mode": "normal"}}}}
+    },
+    {
+      "id": 15,
+      "title": "Node Enabled / Disabled State",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 30, "w": 24, "h": 5},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "node_enabled{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "options": {"graphMode": "none", "colorMode": "background", "textMode": "value_and_name", "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"]}},
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}, "mappings": [{"options": {"0": {"text": "DISABLED", "color": "red"}, "1": {"text": "ENABLED", "color": "green"}}, "type": "value"}]}}
+    },
+    {
+      "id": 16,
+      "title": "Node Priority",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 35, "w": 24, "h": 5},
+      "datasource": {"type": "prometheus", "uid": "ffaxnsjzvkkjkf"},
+      "targets": [{"expr": "node_priority{node_id=~\"$node\"}", "legendFormat": "{{node_id}}", "refId": "A"}],
+      "options": {"graphMode": "none", "colorMode": "background", "textMode": "value_and_name", "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"]}},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 3}, {"color": "red", "value": 6}]}}}
     }
   ]
 }

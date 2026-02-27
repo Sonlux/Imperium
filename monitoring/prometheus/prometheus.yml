@@ -7,11 +7,13 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  # Scrape Prometheus's own metrics for demo visibility
-  - job_name: "prometheus-internal"
+  # Imperium Controller – ibs_* metrics (tc stats, policy state)
+  - job_name: "imperium-controller"
     static_configs:
-      - targets: ["localhost:9090"]
-    metrics_path: "/metrics"
+      - targets:
+          - "172.18.0.1:8000"
+        labels:
+          group: "controller"
 
   # IoT Node Simulators - Scrape metrics from each node
   - job_name: "iot-nodes"
@@ -45,6 +47,19 @@ scrape_configs:
           - "10.218.189.218:8080"
         labels:
           type: "dual_sensor"
+          group: "hardware-nodes"
+
+  # ESP32-CAM - Camera node (HTTP on port 80)
+  - job_name: "esp32-cam"
+    metrics_path: "/metrics"
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      - targets:
+          - "10.218.189.80:80"
+        labels:
+          device: "esp32-cam-1"
+          type: "camera"
           group: "hardware-nodes"
 
   # CO2 Simulator/Collector (fallback when ESP32 offline)

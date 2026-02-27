@@ -18,6 +18,7 @@ class PolicyType(Enum):
     ROUTING_PRIORITY = "routing_priority"
     DEVICE_CONFIG = "device_config"
     BANDWIDTH_LIMIT = "bandwidth_limit"
+    LATENCY_CONTROL = "latency_control"
     SAMPLE_RATE = "sample_rate"
     SAMPLING_INTERVAL = "sampling_interval"
     DEVICE_CONTROL = "device_control"
@@ -162,10 +163,13 @@ class PolicyEngine:
         # Extract bandwidth limit
         bandwidth_limit = None
         if 'bandwidth_limit' in params:
-            value, unit = params['bandwidth_limit'][0], params['bandwidth_limit'][1] if len(params['bandwidth_limit']) > 1 else 'mbps'
+            value = params['bandwidth_limit'][0]
+            unit = params['bandwidth_limit'][1] if len(params['bandwidth_limit']) > 1 and params['bandwidth_limit'][1] else 'mbit'
+            # Normalise: mbps→mbit, kbps→kbit, gbps→gbit
+            unit = unit.replace('bps', 'bit') if unit.endswith('bps') else unit
             bandwidth_limit = f"{value}{unit}"
         elif 'throttle' in params:
-            bandwidth_limit = f"{params['throttle'][1]}mbps"
+            bandwidth_limit = f"{params['throttle'][1]}mbit"
         
         if bandwidth_limit:
             policy = Policy(
@@ -184,11 +188,35 @@ class PolicyEngine:
         return policies
     
     def _generate_latency_policies(self, params: Dict) -> List[Policy]:
-        """Generate latency reduction policies"""
+        """Generate latency control policies.
+        
+        Two modes:
+          1. 'latency_inject' → netem delay (adds artificial latency)
+          2. 'latency_target' / 'low_latency' → traffic shaping for low latency
+        """
         policies = []
         target_device = params.get('target_device', 'all')
-        
-        # Traffic prioritization for low latency
+
+        # Mode 1: user wants to inject/set a specific delay
+        if 'latency_inject' in params:
+            delay_ms = params['latency_inject']
+            if isinstance(delay_ms, (list, tuple)):
+                delay_ms = delay_ms[0]
+            delay_ms = int(delay_ms)
+            policy = Policy(
+                policy_id=self._get_next_policy_id(),
+                policy_type=PolicyType.LATENCY_CONTROL,
+                target=target_device,
+                parameters={
+                    'delay': f'{delay_ms}ms',
+                    'jitter': f'{max(1, delay_ms // 10)}ms',
+                },
+                priority=8
+            )
+            policies.append(policy)
+            return policies
+
+        # Mode 2: traffic prioritisation for low latency
         policy = Policy(
             policy_id=self._get_next_policy_id(),
             policy_type=PolicyType.TRAFFIC_SHAPING,
