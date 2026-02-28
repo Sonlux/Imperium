@@ -1,46 +1,47 @@
 # Device Registry - IoT Node Configuration
-# Defines all devices in the Imperium network with their capabilities and profiles
+# Defines all devices in the Imperium network including simulated nodes.
 
 devices:
-  # Temperature Sensors
-  node-1:
-    type: temperature_sensor
-    description: "Primary temperature sensor - Server Room"
+  # ── Hardware Node 1: ESP32 + MH-Z19 CO2 Sensor ─────────────
+  esp32-mhz19-1:
+    type: co2_sensor
+    model: MH-Z19B
+    description: "ESP32 with MH-Z19 CO2 sensor - Indoor air quality monitoring"
     capabilities:
       - mqtt
-      - telemetry
+      - co2_monitoring
+      - temperature
+      - calibration
       - prometheus_metrics
     qos_profile: high_priority
-    priority_level: 9
-    default_sampling_rate: 5 # seconds
+    priority_level: 8
+    default_publish_interval: 5000 # milliseconds
     mqtt_topics:
-      data: "iot/node-1/data"
-      control: "iot/node-1/control"
-      status: "iot/node-1/status"
+      telemetry: "imperium/devices/esp32-mhz19-1/telemetry"
+      control: "imperium/devices/esp32-mhz19-1/control"
+      config: "imperium/devices/esp32-mhz19-1/config"
+      status: "imperium/devices/esp32-mhz19-1/status"
     network:
-      max_bandwidth: "10mbps"
-      min_latency: "50ms"
-    location: "rack-A-1"
+      ip_address: "10.218.189.218"
+      max_bandwidth: "1mbps"
+      min_latency: "200ms"
+      metrics_port: 8080
+    sensor_specs:
+      measurement_range: "0-5000 ppm"
+      accuracy: "±50ppm + 5%"
+      warmup_time: "3 minutes"
+      response_time: "< 60 seconds"
+      detection_ranges:
+        - 2000
+        - 5000
+        - 10000
+      abc_logic: enabled
+    location: "office-main"
+    alerts:
+      high_co2: 1000  # ppm - ventilation recommended
+      critical_co2: 2000  # ppm - immediate action required
 
-  node-2:
-    type: temperature_sensor
-    description: "Secondary temperature sensor - Storage Area"
-    capabilities:
-      - mqtt
-      - telemetry
-    qos_profile: medium_priority
-    priority_level: 5
-    default_sampling_rate: 10
-    mqtt_topics:
-      data: "iot/node-2/data"
-      control: "iot/node-2/control"
-      status: "iot/node-2/status"
-    network:
-      max_bandwidth: "5mbps"
-      min_latency: "100ms"
-    location: "storage-B-2"
-
-  # Audio Sensors
+  # ── Hardware Node 2: ESP32 + INMP441 Audio Sensor ───────────
   esp32-audio-1:
     type: audio_sensor
     description: "ESP32 with I2S microphone - Audio capture node"
@@ -70,84 +71,149 @@ devices:
       buffer_count: 4
     location: "raspberry-pi-network"
 
-  # Cameras
-  camera-1:
+  # ── Hardware Node 3: ESP32-CAM with OV2640 ──────────────────
+  esp32-cam-1:
     type: camera
-    description: "Security camera - Main entrance"
+    description: "ESP32-CAM with OV2640 - Image capture node"
     capabilities:
       - mqtt
-      - video_stream
-      - motion_detection
-    qos_profile: bandwidth_limited
-    priority_level: 7
-    default_sampling_rate: 1 # FPS control
-    mqtt_topics:
-      data: "iot/camera-1/stream"
-      control: "iot/camera-1/control"
-      status: "iot/camera-1/status"
-    network:
-      max_bandwidth: "2mbps" # Throttled for bandwidth conservation
-      min_latency: "200ms"
-    location: "entrance-main"
-
-  camera-2:
-    type: camera
-    description: "Security camera - Parking lot"
-    capabilities:
-      - mqtt
-      - video_stream
-    qos_profile: low_priority
-    priority_level: 3
-    default_sampling_rate: 1
-    mqtt_topics:
-      data: "iot/camera-2/stream"
-      control: "iot/camera-2/control"
-      status: "iot/camera-2/status"
-    network:
-      max_bandwidth: "1mbps"
-      min_latency: "500ms"
-    location: "parking-lot"
-
-  # Environmental Sensors
-  env-sensor-1:
-    type: environmental_sensor
-    description: "Multi-sensor - Humidity, Pressure, Air Quality"
-    capabilities:
-      - mqtt
-      - telemetry
-      - multi_sensor
+      - image_capture
       - prometheus_metrics
-    qos_profile: medium_priority
-    priority_level: 6
-    default_sampling_rate: 15
+      - policy_control
+    qos_profile: high_priority
+    priority_level: 8
+    default_resolution: "SVGA" # 800x600
+    default_quality: 10 # JPEG quality (0-63, lower is better)
+    default_brightness: 0 # -2 to 2
+    default_capture_interval: 5000 # ms (5 seconds)
     mqtt_topics:
-      data: "iot/env-sensor-1/data"
-      control: "iot/env-sensor-1/control"
-      status: "iot/env-sensor-1/status"
+      images: "iot/esp32-cam-1/images"
+      telemetry: "iot/esp32-cam-1/telemetry"
+      control: "iot/esp32-cam-1/control"
+      status: "iot/esp32-cam-1/status"
+    network:
+      ip_address: "10.218.189.80"
+      max_bandwidth: "1mbps"
+      min_latency: "200ms"
+      metrics_port: 80
+    camera_config:
+      resolutions:
+        - "QVGA"   # 320x240
+        - "VGA"    # 640x480
+        - "SVGA"   # 800x600 (default)
+        - "XGA"    # 1024x768
+        - "HD"     # 1280x720
+        - "SXGA"   # 1280x1024
+        - "UXGA"   # 1600x1200
+      quality_range: [0, 63]
+      brightness_range: [-2, 2]
+      min_capture_interval: 100 # ms (10 FPS max)
+      max_capture_interval: 60000 # ms (1 frame per minute min)
+    location: "raspberry-pi-network"
+
+  # ── Docker Simulated Nodes (node-1 through node-10) ────────
+  # IPs are dynamically assigned by Docker; the network.py
+  # DEVICE_REGISTRY auto-discovers them at startup.
+  # These entries provide default values for metric seeding.
+  node-1:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 1"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
     network:
       max_bandwidth: "5mbps"
-      min_latency: "150ms"
-    location: "office-floor-2"
+      min_latency: "50ms"
 
-  # Motion Sensors
-  motion-1:
-    type: motion_sensor
-    description: "PIR motion detector - Hallway"
-    capabilities:
-      - mqtt
-      - event_based
-      - low_power
-    qos_profile: event_driven
-    priority_level: 8
-    default_sampling_rate: 0 # Event-based, not periodic
-    mqtt_topics:
-      data: "iot/motion-1/events"
-      control: "iot/motion-1/control"
-      status: "iot/motion-1/status"
+  node-2:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 2"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
     network:
-      max_bandwidth: "1mbps"
-      min_latency: "50ms" # Low latency for security
-    location: "hallway-floor-1"
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
+
+  node-3:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 3"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
+    network:
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
+
+  node-4:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 4"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
+    network:
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
+
+  node-5:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 5"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
+    network:
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
+
+  node-6:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 6"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
+    network:
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
+
+  node-7:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 7"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
+    network:
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
+
+  node-8:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 8"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
+    network:
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
+
+  node-9:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 9"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
+    network:
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
+
+  node-10:
+    type: simulated_sensor
+    description: "Docker simulated IoT node 10"
+    capabilities: [mqtt, telemetry]
+    qos_profile: medium_priority
+    priority_level: 5
+    network:
+      max_bandwidth: "5mbps"
+      min_latency: "50ms"
 
 # QoS Profiles Definition
 qos_profiles:

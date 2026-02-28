@@ -32,10 +32,10 @@
 #define I2S_BITS_PER_SAMPLE      16
 #define I2S_CHANNELS             1          // Mono
 
-// Pin Configuration (adjust for your board)
-#define I2S_SCK_PIN              25         // Serial Clock
-#define I2S_WS_PIN               33         // Word Select (LRCK)
-#define I2S_SD_PIN               32         // Serial Data
+// Pin Configuration (INMP441 wiring)
+#define I2S_SCK_PIN              33         // Serial Clock (SCK/BCLK)
+#define I2S_WS_PIN               25         // Word Select (LRCK/WS)
+#define I2S_SD_PIN               32         // Serial Data (SD/DOUT)
 
 // ============== Audio Processing ==============
 #define AUDIO_FRAME_MS           30         // 30ms frames

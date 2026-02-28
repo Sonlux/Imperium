@@ -18,10 +18,17 @@ class PolicyType(Enum):
     ROUTING_PRIORITY = "routing_priority"
     DEVICE_CONFIG = "device_config"
     BANDWIDTH_LIMIT = "bandwidth_limit"
+    LATENCY_CONTROL = "latency_control"
     SAMPLE_RATE = "sample_rate"
+    SAMPLING_INTERVAL = "sampling_interval"
     DEVICE_CONTROL = "device_control"
     PUBLISH_INTERVAL = "publish_interval"
     AUDIO_GAIN = "audio_gain"
+    CAMERA_RESOLUTION = "camera_resolution"
+    CAMERA_QUALITY = "camera_quality"
+    CAMERA_BRIGHTNESS = "camera_brightness"
+    CAMERA_FRAMERATE = "camera_framerate"
+    CAMERA_CONTROL = "camera_control"
 
 
 @dataclass
@@ -80,6 +87,9 @@ class PolicyEngine:
         elif intent_type == 'sample_rate':
             policies.extend(self._generate_sample_rate_policies(parameters))
         
+        elif intent_type == 'sampling_interval':
+            policies.extend(self._generate_sampling_interval_policies(parameters))
+        
         elif intent_type == 'device_control':
             policies.extend(self._generate_device_control_policies(parameters))
         
@@ -88,6 +98,21 @@ class PolicyEngine:
         
         elif intent_type == 'audio_gain':
             policies.extend(self._generate_audio_gain_policies(parameters))
+        
+        elif intent_type == 'camera_resolution':
+            policies.extend(self._generate_camera_resolution_policies(parameters))
+        
+        elif intent_type == 'camera_quality':
+            policies.extend(self._generate_camera_quality_policies(parameters))
+        
+        elif intent_type == 'camera_brightness':
+            policies.extend(self._generate_camera_brightness_policies(parameters))
+        
+        elif intent_type == 'camera_framerate':
+            policies.extend(self._generate_camera_framerate_policies(parameters))
+        
+        elif intent_type == 'camera_control':
+            policies.extend(self._generate_camera_control_policies(parameters))
         
         # Store generated policies
         self.policies.extend(policies)
@@ -138,10 +163,13 @@ class PolicyEngine:
         # Extract bandwidth limit
         bandwidth_limit = None
         if 'bandwidth_limit' in params:
-            value, unit = params['bandwidth_limit'][0], params['bandwidth_limit'][1] if len(params['bandwidth_limit']) > 1 else 'mbps'
+            value = params['bandwidth_limit'][0]
+            unit = params['bandwidth_limit'][1] if len(params['bandwidth_limit']) > 1 and params['bandwidth_limit'][1] else 'mbit'
+            # Normalise: mbps→mbit, kbps→kbit, gbps→gbit
+            unit = unit.replace('bps', 'bit') if unit.endswith('bps') else unit
             bandwidth_limit = f"{value}{unit}"
         elif 'throttle' in params:
-            bandwidth_limit = f"{params['throttle'][1]}mbps"
+            bandwidth_limit = f"{params['throttle'][1]}mbit"
         
         if bandwidth_limit:
             policy = Policy(
@@ -160,11 +188,35 @@ class PolicyEngine:
         return policies
     
     def _generate_latency_policies(self, params: Dict) -> List[Policy]:
-        """Generate latency reduction policies"""
+        """Generate latency control policies.
+        
+        Two modes:
+          1. 'latency_inject' → netem delay (adds artificial latency)
+          2. 'latency_target' / 'low_latency' → traffic shaping for low latency
+        """
         policies = []
         target_device = params.get('target_device', 'all')
-        
-        # Traffic prioritization for low latency
+
+        # Mode 1: user wants to inject/set a specific delay
+        if 'latency_inject' in params:
+            delay_ms = params['latency_inject']
+            if isinstance(delay_ms, (list, tuple)):
+                delay_ms = delay_ms[0]
+            delay_ms = int(delay_ms)
+            policy = Policy(
+                policy_id=self._get_next_policy_id(),
+                policy_type=PolicyType.LATENCY_CONTROL,
+                target=target_device,
+                parameters={
+                    'delay': f'{delay_ms}ms',
+                    'jitter': f'{max(1, delay_ms // 10)}ms',
+                },
+                priority=8
+            )
+            policies.append(policy)
+            return policies
+
+        # Mode 2: traffic prioritisation for low latency
         policy = Policy(
             policy_id=self._get_next_policy_id(),
             policy_type=PolicyType.TRAFFIC_SHAPING,
@@ -232,6 +284,35 @@ class PolicyEngine:
             parameters={
                 'sample_rate': sample_rate,
                 'command': 'SET_SAMPLE_RATE'
+            },
+            priority=7
+        )
+        policies.append(policy)
+        
+        return policies
+    
+    def _generate_sampling_interval_policies(self, params: Dict) -> List[Policy]:
+        """Generate sampling interval policies for environmental sensors (CO2, temp, humidity)"""
+        policies = []
+        target_device = params.get('target_device', 'mhz19-01')
+        
+        # Extract interval value in seconds
+        interval_seconds = 10  # Default
+        if 'interval_seconds' in params:
+            interval_tuple = params['interval_seconds']
+            interval_str = interval_tuple[0] if isinstance(interval_tuple, tuple) else str(interval_tuple)
+            interval_seconds = int(interval_str)
+        
+        # Validate interval (min 2 seconds for MH-Z19, max 3600)
+        interval_seconds = max(2, min(3600, interval_seconds))
+        
+        policy = Policy(
+            policy_id=self._get_next_policy_id(),
+            policy_type=PolicyType.SAMPLING_INTERVAL,
+            target=target_device,
+            parameters={
+                'interval_seconds': interval_seconds,
+                'command': 'SET_SAMPLING_INTERVAL'
             },
             priority=7
         )
@@ -336,10 +417,175 @@ class PolicyEngine:
         
         return policies
     
+    def _generate_camera_resolution_policies(self, params: Dict) -> List[Policy]:
+        """Generate camera resolution control policies"""
+        policies = []
+        target = params.get('target_device', 'esp32-cam-1')
+        
+        # Extract resolution value
+        resolution_value = params.get('resolution_value', ('SVGA',))[0] if params.get('resolution_value') else 'SVGA'
+        
+        # Normalize resolution format
+        resolution_map = {
+            'qvga': 'QVGA', '320x240': 'QVGA',
+            'vga': 'VGA', '640x480': 'VGA',
+            'svga': 'SVGA', '800x600': 'SVGA',
+            'xga': 'XGA', '1024x768': 'XGA',
+            'hd': 'HD', '1280x720': 'HD',
+            'sxga': 'SXGA', '1280x1024': 'SXGA',
+            'uxga': 'UXGA', '1600x1200': 'UXGA'
+        }
+        
+        resolution = resolution_map.get(resolution_value.lower(), resolution_value.upper())
+        
+        policy = Policy(
+            policy_id=self._get_next_policy_id(),
+            policy_type=PolicyType.CAMERA_RESOLUTION,
+            target=target,
+            parameters={
+                'resolution': resolution,
+                'command': 'SET_RESOLUTION'
+            },
+            priority=5
+        )
+        policies.append(policy)
+        
+        return policies
+    
+    def _generate_camera_quality_policies(self, params: Dict) -> List[Policy]:
+        """Generate camera quality control policies"""
+        policies = []
+        target = params.get('target_device', 'esp32-cam-1')
+        
+        # Extract quality value (0-63, lower is better for JPEG)
+        quality_value = params.get('quality_value', (10,))[0] if params.get('quality_value') else 10
+        
+        # Handle quality presets
+        if 'quality_preset' in params:
+            preset = params['quality_preset'][0].lower()
+            quality_map = {'high': 5, 'medium': 15, 'low': 30}
+            quality_value = quality_map.get(preset, 10)
+        
+        try:
+            quality = int(quality_value)
+            quality = max(0, min(63, quality))  # Clamp to valid range
+        except (ValueError, TypeError):
+            quality = 10  # Default medium quality
+        
+        policy = Policy(
+            policy_id=self._get_next_policy_id(),
+            policy_type=PolicyType.CAMERA_QUALITY,
+            target=target,
+            parameters={
+                'quality': quality,
+                'command': 'SET_QUALITY'
+            },
+            priority=5
+        )
+        policies.append(policy)
+        
+        return policies
+    
+    def _generate_camera_brightness_policies(self, params: Dict) -> List[Policy]:
+        """Generate camera brightness control policies"""
+        policies = []
+        target = params.get('target_device', 'esp32-cam-1')
+        
+        # Extract brightness value (-2 to 2)
+        brightness_value = params.get('brightness_value', (0,))[0] if params.get('brightness_value') else 0
+        
+        try:
+            brightness = int(brightness_value)
+            brightness = max(-2, min(2, brightness))  # Clamp to valid range
+        except (ValueError, TypeError):
+            brightness = 0  # Default neutral
+        
+        policy = Policy(
+            policy_id=self._get_next_policy_id(),
+            policy_type=PolicyType.CAMERA_BRIGHTNESS,
+            target=target,
+            parameters={
+                'brightness': brightness,
+                'command': 'SET_BRIGHTNESS'
+            },
+            priority=5
+        )
+        policies.append(policy)
+        
+        return policies
+    
+    def _generate_camera_framerate_policies(self, params: Dict) -> List[Policy]:
+        """Generate camera frame rate/capture interval control policies"""
+        policies = []
+        target = params.get('target_device', 'esp32-cam-1')
+        
+        # Extract frame rate or capture interval
+        if 'framerate_value' in params:
+            fps = int(params['framerate_value'][0])
+            interval_ms = int(1000 / fps) if fps > 0 else 5000
+        elif 'capture_interval' in params:
+            interval = int(params['capture_interval'][0])
+            # Determine if value is in seconds or milliseconds (assume seconds if < 100)
+            interval_ms = interval * 1000 if interval < 100 else interval
+        else:
+            interval_ms = 5000  # Default 5 seconds
+        
+        # Clamp to valid range (100ms to 60000ms = 10 FPS to 1 frame per minute)
+        interval_ms = max(100, min(60000, interval_ms))
+        
+        policy = Policy(
+            policy_id=self._get_next_policy_id(),
+            policy_type=PolicyType.CAMERA_FRAMERATE,
+            target=target,
+            parameters={
+                'capture_interval_ms': interval_ms,
+                'fps': round(1000 / interval_ms, 2),
+                'command': 'SET_FRAMERATE'
+            },
+            priority=5
+        )
+        policies.append(policy)
+        
+        return policies
+    
+    def _generate_camera_control_policies(self, params: Dict) -> List[Policy]:
+        """Generate camera enable/disable control policies"""
+        policies = []
+        target = params.get('target_device', 'esp32-cam-1')
+        
+        # Determine action
+        if 'enable_camera' in params:
+            enabled = True
+            action = 'ENABLE_CAMERA'
+        elif 'disable_camera' in params:
+            enabled = False
+            action = 'DISABLE_CAMERA'
+        elif 'camera_action' in params:
+            camera_action = params['camera_action'][0].lower()
+            enabled = 'resume' in camera_action or 'start' in camera_action
+            action = 'ENABLE_CAMERA' if enabled else 'DISABLE_CAMERA'
+        else:
+            enabled = True
+            action = 'ENABLE_CAMERA'
+        
+        policy = Policy(
+            policy_id=self._get_next_policy_id(),
+            policy_type=PolicyType.CAMERA_CONTROL,
+            target=target,
+            parameters={
+                'enabled': enabled,
+                'command': action
+            },
+            priority=7
+        )
+        policies.append(policy)
+        
+        return policies
+    
     def _get_next_policy_id(self) -> str:
         """Generate unique policy ID"""
-        self.policy_counter += 1
-        return f"policy-{self.policy_counter}"
+        import uuid
+        return f"policy-{uuid.uuid4().hex[:8]}"
     
     def get_policies(self) -> List[Dict]:
         """Return all generated policies"""

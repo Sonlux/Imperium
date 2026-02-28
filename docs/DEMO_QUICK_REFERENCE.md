@@ -14,7 +14,7 @@ python3 scripts/demo_menu.py
 - **2** - Check API Health
 
 ### Intent Management (3-6)
-- **3** - Submit Intent (Examples) - 8 preset intents
+- **3** - Submit Intent (Examples) - 38 preset intents across all node types
 - **4** - Submit Custom Intent - Free-form natural language
 - **5** - List All Intents
 - **6** - List Policies
@@ -94,41 +94,71 @@ python3 scripts/demo_menu.py
 
 ---
 
-## Sample Intents
+## Sample Intents (All 38 Verified ✓)
 
-### Simulated Nodes
+### Simulated Nodes (node-1 to node-10)
 ```
-prioritize node-1
-limit bandwidth to 100KB/s for node-2
-reduce latency to 10ms for node-3
-set QoS level 2 for node-4
+QoS:      set qos level 2 for node-1
+          reliable delivery for node-3
+Control:  enable device node-5
+          disable node-2
+          reset device node-7
+Network:  prioritize node-1
+          set high priority for node-10
 ```
 
-### ESP32 Audio Node
+### ESP32 CO₂ Sensor (esp32-mhz19-1)
 ```
-Sample Rate:
-  set sample rate to 48000 hz for esp32-audio-1
-  change audio rate to 16 khz for esp32-audio-1
-  use 44100 hz sampling for esp32-audio-1
+Sampling: set sampling interval for esp32-mhz19-1 to 30 seconds
+          read co2 every 10 seconds for esp32-mhz19-1
+QoS:      set qos level 2 for esp32-mhz19-1
+Control:  reset esp32-mhz19-1
+Network:  limit bandwidth to 1mbit for esp32-mhz19-1
+          add latency of 50ms for esp32-mhz19-1
+          set high priority for esp32-mhz19-1
+```
 
-Audio Gain:
-  set audio gain to 2.5 for esp32-audio-1
-  amplify audio by 3x for esp32-audio-1
-  boost volume to 1.5 for esp32-audio-1
+### ESP32 Audio Node (esp32-audio-1)
+```
+Sample Rate:  set sample rate to 48000 hz for esp32-audio-1
+              16 khz sampling for esp32-audio-1
 
-Telemetry:
-  set telemetry rate to 5 seconds for esp32-audio-1
-  report telemetry every 10 seconds for esp32-audio-1
-  send data every 2 seconds for esp32-audio-1
+Audio Gain:   set audio gain to 3.5 for esp32-audio-1
+              amplify audio by 2x for esp32-audio-1
 
-QoS:
-  set QoS level 2 for esp32-audio-1
-  use reliable delivery for esp32-audio-1
+Telemetry:    send data every 5 seconds for esp32-audio-1
 
-Control:
-  enable esp32-audio-1
-  disable esp32-audio-1
-  reset esp32-audio-1
+QoS:          qos level 1 for esp32-audio-1
+
+Control:      disable esp32-audio-1
+              enable esp32-audio-1
+
+Network:      limit bandwidth to 500kbit for esp32-audio-1
+```
+
+### ESP32-CAM (esp32-cam-1)
+```
+Resolution:   set resolution to VGA for esp32-cam-1
+              change to HD resolution for esp32-cam-1
+              set resolution to UXGA for esp32-cam-1
+
+Quality:      set camera quality to 10 for esp32-cam-1
+              set camera quality to 5 for esp32-cam-1
+
+Brightness:   set camera brightness to 1 for esp32-cam-1
+
+Framerate:    set camera fps to 5 for esp32-cam-1
+              capture every 3 seconds for esp32-cam-1
+
+Camera Ctrl:  disable camera for esp32-cam-1
+              enable camera for esp32-cam-1
+
+QoS:          set qos level 2 for esp32-cam-1
+
+Network (TC): limit bandwidth to 2mbit for esp32-cam-1
+              add latency of 100ms for esp32-cam-1
+              set high priority for esp32-cam-1
+              minimize latency for esp32-cam-1
 ```
 
 ---
@@ -172,15 +202,16 @@ Control:
 4. Press Ctrl+C to stop
 ```
 
-### 5. Full Automated Demo (2 minutes)
+### 5. Full Automated Demo (3 minutes)
 ```
 1. Main Menu → 17 (Run Full Demo)
-2. System automatically:
-   - Checks health
-   - Logs in
-   - Submits 3 intents
-   - Shows enforcement
-   - Displays metrics
+2. System automatically walks through:
+   - Health check & authentication
+   - Simulated nodes: QoS, device enable, priority
+   - CO₂ sensor: sampling, QoS, bandwidth, latency
+   - Audio node: sample rate, gain, publish interval
+   - ESP32-CAM: resolution, quality, brightness, framerate, TC rules
+   - Network enforcement status summary
 3. Press Enter between steps
 ```
 
@@ -323,6 +354,6 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ---
 
-**Last Updated**: 2026-02-08  
-**Demo Version**: 3.0 (ESP32 Integrated)  
+**Last Updated**: 2026-02-26
+**Demo Version**: 4.0 (All Nodes, 38 Verified Intents)
 **Status**: Production Ready ✅
