@@ -516,10 +516,10 @@ When creating new scripts for this directory:
 
 ## 🔗 Related Documentation
 
-- [SECURITY_CHECKLIST.md](../SECURITY_CHECKLIST.md) - Pre-deployment security verification
-- [SECURITY_IMPLEMENTATION.md](../docs/SECURITY_IMPLEMENTATION.md) - Security implementation summary
-- [DISASTER_RECOVERY.md](../docs/DISASTER_RECOVERY.md) - Backup and recovery procedures
-- [RASPBERRY_PI_SETUP.md](../docs/RASPBERRY_PI_SETUP.md) - Production deployment guide
+- [SECURITY_CHECKLIST.md](../docs/security/SECURITY_CHECKLIST.md) - Pre-deployment security verification
+- [SECURITY_IMPLEMENTATION.md](../docs/security/SECURITY_IMPLEMENTATION.md) - Security implementation summary
+- [DISASTER_RECOVERY.md](../docs/operations/DISASTER_RECOVERY.md) - Backup and recovery procedures
+- [RASPBERRY_PI_SETUP.md](../docs/setup/RASPBERRY_PI_SETUP.md) - Production deployment guide
 
 ---
 

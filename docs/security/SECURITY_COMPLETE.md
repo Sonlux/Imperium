@@ -235,11 +235,11 @@ docker compose restart
 ## 🔗 Documentation Links
 
 - **[SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md)** - Pre-deployment verification (400+ lines)
-- **[docs/SECURITY_IMPLEMENTATION.md](docs/SECURITY_IMPLEMENTATION.md)** - Complete audit summary (600+ lines)
-- **[scripts/README.md](scripts/README.md)** - Script usage guide (400+ lines)
-- **[.env.example](.env.example)** - Environment template with security warnings
-- **[docs/SECURITY.md](docs/SECURITY.md)** - General security documentation
-- **[docs/DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md)** - Backup and recovery procedures
+- **[SECURITY_IMPLEMENTATION.md](SECURITY_IMPLEMENTATION.md)** - Complete audit summary (600+ lines)
+- **[scripts/README.md](../../scripts/README.md)** - Script usage guide (400+ lines)
+- **[.env.example](../../.env.example)** - Environment template with security warnings
+- **[SECURITY.md](SECURITY.md)** - General security documentation
+- **[DISASTER_RECOVERY.md](../operations/DISASTER_RECOVERY.md)** - Backup and recovery procedures
 
 ---
 

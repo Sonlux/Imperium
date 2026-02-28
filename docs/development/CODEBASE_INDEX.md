@@ -5,11 +5,6 @@
 ```
 Imperium/
 ├── README.md                    # Project overview
-├── QUICKSTART.md                # Quick start guide
-├── SETUP.md                     # Full setup instructions
-├── RASPBERRY_PI_SETUP.md        # Raspberry Pi deployment guide
-├── CODEBASE_INDEX.md            # This file
-├── task.md                      # Development task tracker
 ├── LICENSE                      # Project license
 ├── Makefile                     # Build/run shortcuts
 ├── requirements.txt             # Python dependencies
@@ -23,6 +18,7 @@ Imperium/
 │   ├── auth.py                  # JWT authentication
 │   ├── rate_limiter.py          # API rate limiting
 │   ├── database.py              # SQLite persistence
+│   ├── metrics_exporter.py      # Prometheus metrics exporter
 │   ├── intent_manager/
 │   │   ├── api.py               # REST API endpoints
 │   │   ├── parser.py            # NLP intent parser (7 intent types)
@@ -84,9 +80,10 @@ Imperium/
 │               ├── dashboard.yml               # Dashboard provisioner config
 │               ├── imperium-overview.json       # System overview dashboard
 │               ├── imperium-devices.json        # Device management dashboard
+│               ├── network-enforcement.json     # Network enforcement dashboard
 │               ├── esp32-mhz19-1-dashboard.json # CO2 sensor dashboard
-│               ├── esp32-audio-1-dashboard.json  # Audio sensor dashboard
-│               └── iot-nodes-dashboard.json      # 10 simulated nodes dashboard
+│               ├── esp32-audio-1-dashboard.json # Audio sensor dashboard
+│               └── iot-nodes-dashboard.json     # 10 simulated nodes dashboard
 │
 ├── scripts/                     # Utility scripts
 │   ├── init_database.py         # Database initialization
@@ -106,23 +103,34 @@ Imperium/
 │   └── test_integration.py      # Integration tests
 │
 ├── docs/                        # Documentation
-│   ├── demo.md                  # Demo walkthrough
-│   ├── DEMO_COMMANDS.md         # Demo command reference
-│   ├── DEMO_QUICK_REFERENCE.md  # Quick reference card
-│   ├── DEMO_VERIFICATION_REPORT.md  # Test verification report
-│   ├── DEPLOYMENT_SUMMARY.md    # Deployment summary
-│   ├── ESP32_ADVANCED_CONTROLS.md   # ESP32 advanced controls
-│   ├── ESP32_DEMO_INTEGRATION.md    # ESP32 demo integration
-│   ├── ESP32_INTEGRATION_FINAL.md   # ESP32 integration report
-│   ├── DISASTER_RECOVERY.md     # Disaster recovery procedures
-│   ├── MONITORING_GUIDE.md      # Monitoring setup guide
-│   ├── PROMETHEUS_QUERIES.md    # Useful PromQL queries
-│   ├── PROGRESS.md              # Development progress log
-│   ├── PRD_CLI_IMPLEMENTATION.md    # CLI implementation details
-│   ├── SECURITY.md              # Security overview
-│   ├── SECURITY_IMPLEMENTATION.md   # Security implementation
-│   ├── SECURITY_CHECKLIST.md    # Security checklist
-│   └── SECURITY_COMPLETE.md     # Security completion report
+│   ├── setup/                   # Setup & deployment guides
+│   │   ├── QUICKSTART.md
+│   │   ├── SETUP.md
+│   │   ├── RASPBERRY_PI_SETUP.md
+│   │   └── DEPLOYMENT_SUMMARY.md
+│   ├── security/                # Security documentation
+│   │   ├── SECURITY.md
+│   │   ├── SECURITY_IMPLEMENTATION.md
+│   │   ├── SECURITY_CHECKLIST.md
+│   │   └── SECURITY_COMPLETE.md
+│   ├── esp32/                   # ESP32 hardware node docs
+│   │   ├── ESP32_ADVANCED_CONTROLS.md
+│   │   ├── ESP32_DEMO_INTEGRATION.md
+│   │   └── ESP32_INTEGRATION_FINAL.md
+│   ├── demo/                    # Demo guides & verification
+│   │   ├── demo.md
+│   │   ├── DEMO_COMMANDS.md
+│   │   ├── DEMO_QUICK_REFERENCE.md
+│   │   └── DEMO_VERIFICATION_REPORT.md
+│   ├── operations/              # Monitoring & recovery
+│   │   ├── DISASTER_RECOVERY.md
+│   │   ├── MONITORING_GUIDE.md
+│   │   └── PROMETHEUS_QUERIES.md
+│   └── development/             # Development tracking
+│       ├── CODEBASE_INDEX.md    # This file
+│       ├── PROGRESS.md
+│       ├── task.md
+│       └── PRD_CLI_IMPLEMENTATION.md
 │
 ├── data/                        # Runtime data (gitignored)
 │   └── imperium.db              # SQLite database
@@ -132,21 +140,21 @@ Imperium/
 
 ## Key Services
 
-| Service | Port | Description |
-|---------|------|-------------|
-| Imperium API | 5000 | Flask REST API |
-| MQTT Broker | 1883 | Mosquitto message broker |
-| Prometheus | 9090 | Metrics collection |
-| Grafana | 3000 | Dashboard visualization |
-| IoT Nodes | 8001-8010 | Simulated node metrics |
+| Service      | Port      | Description              |
+| ------------ | --------- | ------------------------ |
+| Imperium API | 5000      | Flask REST API           |
+| MQTT Broker  | 1883      | Mosquitto message broker |
+| Prometheus   | 9090      | Metrics collection       |
+| Grafana      | 3000      | Dashboard visualization  |
+| IoT Nodes    | 8001-8010 | Simulated node metrics   |
 
 ## Hardware Nodes
 
-| Device ID | Hardware | Metrics |
-|-----------|----------|---------|
-| esp32-mhz19-1 | MH-Z19B CO2 Sensor | co2_ppm, temperature_celsius |
-| esp32-audio-1 | INMP441 Microphone | audio_rms_level_db, audio_gain |
-| esp32-cam-1 | OV2640 Camera | frames_captured, frame_size_bytes |
+| Device ID     | Hardware           | Metrics                           |
+| ------------- | ------------------ | --------------------------------- |
+| esp32-mhz19-1 | MH-Z19B CO2 Sensor | co2_ppm, temperature_celsius      |
+| esp32-audio-1 | INMP441 Microphone | audio_rms_level_db, audio_gain    |
+| esp32-cam-1   | OV2640 Camera      | frames_captured, frame_size_bytes |
 
 ## Intent Types
 

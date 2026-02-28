@@ -9,9 +9,11 @@
 ## 🎯 Two Deployment Options
 
 ### **Option A: Standalone (No Docker Required)**
+
 Run Imperium controller directly with Python - uses system MQTT/Prometheus
 
 ### **Option B: Docker-Based (Recommended for Full Stack)**
+
 Run MQTT, Prometheus, Grafana, and IoT simulators in containers
 
 ---
@@ -51,6 +53,7 @@ pip install pyyaml prometheus-client sqlalchemy requests netifaces
 ```
 
 **Current Status:**
+
 ```
 ✅ Installed: Flask, flask-cors, paho-mqtt, bcrypt, sqlalchemy, pyjwt
 ❌ Missing: PyYAML, prometheus-client, pandas, numpy, scapy, netifaces, pytest
@@ -314,12 +317,14 @@ MQTT Broker:      mqtt://raspberrypi.local:1883
 ## 🔍 Troubleshooting
 
 ### **Issue: "ModuleNotFoundError: No module named 'yaml'"**
+
 ```bash
 source venv/bin/activate
 pip install pyyaml
 ```
 
 ### **Issue: "Cannot connect to MQTT broker"**
+
 ```bash
 # Check if MQTT is running
 docker compose ps | grep mosquitto
@@ -331,6 +336,7 @@ docker compose restart mosquitto
 ```
 
 ### **Issue: "Permission denied: tc command"**
+
 ```bash
 # tc commands require sudo
 sudo tc qdisc show dev eth0
@@ -340,6 +346,7 @@ sudo PYTHONPATH=/home/imperium/Imperium python src/main.py
 ```
 
 ### **Issue: "Database locked"**
+
 ```bash
 # Stop any running instances
 pkill -f "python src/main.py"
@@ -356,6 +363,7 @@ sqlite3 data/imperium.db "PRAGMA integrity_check;"
 After installation:
 
 1. **Change Default Password**
+
    ```bash
    # Use API to change admin password
    curl -X POST http://localhost:5000/api/v1/auth/change-password \
@@ -369,12 +377,13 @@ After installation:
    - Test MQTT connection
 
 3. **Test Network Enforcement**
+
    ```bash
    # Submit intent to limit bandwidth
    curl -X POST http://localhost:5000/api/v1/intents \
      -H "Authorization: Bearer TOKEN" \
      -d '{"description": "Limit camera bandwidth to 1 Mbps"}'
-   
+
    # Verify tc rules applied
    sudo tc qdisc show dev eth0
    ```
@@ -388,11 +397,11 @@ After installation:
 
 ## 📖 Documentation
 
-- **Main README:** [README.md](README.md)
-- **API Documentation:** [API Reference in README](README.md#api-reference)
-- **Security Guide:** [docs/SECURITY.md](docs/SECURITY.md)
+- **Main README:** [README.md](../../README.md)
+- **API Documentation:** [API Reference in README](../../README.md#api-reference)
+- **Security Guide:** [SECURITY.md](../security/SECURITY.md)
 - **Deployment Summary:** [DEPLOYMENT_SUMMARY.md](DEPLOYMENT_SUMMARY.md)
-- **Task Tracking:** [task.md](task.md)
+- **Task Tracking:** [task.md](../development/task.md)
 
 ---
 

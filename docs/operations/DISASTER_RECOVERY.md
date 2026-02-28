@@ -7,18 +7,21 @@ This document outlines procedures for recovering the Imperium Intent-Based Netwo
 ## Backup Strategy
 
 ### Automated Backups
+
 - **Daily**: Full database and configuration backup at 2:00 AM
 - **Location**: `/home/imperium/Imperium/backups/`
 - **Retention**: 7 days (configurable via `RETENTION_DAYS`)
 - **Cron job**: `/etc/cron.d/imperium`
 
 ### Manual Backup
+
 ```bash
 cd /home/imperium/Imperium
 ./scripts/backup.sh
 ```
 
 ### Backup Contents
+
 - SQLite database (`data/imperium.db`)
 - Configuration files (`config/*.yaml`, `config/*.conf`)
 - Environment file (`.env`)
@@ -31,6 +34,7 @@ cd /home/imperium/Imperium
 **Symptoms**: API not responding, systemd service failed
 
 **Recovery Steps**:
+
 ```bash
 # Check service status
 sudo systemctl status imperium
@@ -50,6 +54,7 @@ curl http://localhost:5000/health
 **Symptoms**: API errors, database integrity failures
 
 **Recovery Steps**:
+
 ```bash
 # Stop service
 sudo systemctl stop imperium
@@ -71,6 +76,7 @@ sudo systemctl start imperium
 **Symptoms**: MQTT, Prometheus, or Grafana unavailable
 
 **Recovery Steps**:
+
 ```bash
 # Check container status
 docker ps -a
@@ -91,6 +97,7 @@ curl http://localhost:3000  # Grafana
 **Symptoms**: Traffic control rules not applied
 
 **Recovery Steps**:
+
 ```bash
 # Check tc status
 tc qdisc show dev eth0
@@ -146,44 +153,47 @@ curl http://localhost:5000/health
 ## Health Monitoring
 
 ### Automated Health Check
+
 Uncomment the health check line in `/etc/cron.d/imperium` to enable automatic service restart on failure.
 
 ### Manual Health Check
+
 ```bash
 ./scripts/recovery_test.sh
 ```
 
 ### Key Endpoints to Monitor
-| Service | URL | Expected |
-|---------|-----|----------|
-| API | http://localhost:5000/health | `{"status":"healthy"}` |
-| MQTT | localhost:1883 | Connection accepted |
-| Prometheus | http://localhost:9090/-/ready | ready |
-| Grafana | http://localhost:3000/api/health | `{"database":"ok"}` |
+
+| Service    | URL                              | Expected               |
+| ---------- | -------------------------------- | ---------------------- |
+| API        | http://localhost:5000/health     | `{"status":"healthy"}` |
+| MQTT       | localhost:1883                   | Connection accepted    |
+| Prometheus | http://localhost:9090/-/ready    | ready                  |
+| Grafana    | http://localhost:3000/api/health | `{"database":"ok"}`    |
 
 ## Log Locations
 
-| Component | Log Location |
-|-----------|-------------|
+| Component    | Log Location                |
+| ------------ | --------------------------- |
 | Imperium API | `/var/log/imperium/app.log` |
-| Systemd | `journalctl -u imperium` |
-| Docker | `docker logs <container>` |
-| MQTT | `docker logs imperium-mqtt` |
+| Systemd      | `journalctl -u imperium`    |
+| Docker       | `docker logs <container>`   |
+| MQTT         | `docker logs imperium-mqtt` |
 
 ## Contact & Escalation
 
 - **Repository**: https://github.com/Sonlux/Imperium
 - **Branch**: ibn-initial-integration
-- **Documentation**: [SECURITY.md](SECURITY.md), [README.md](../README.md)
+- **Documentation**: [SECURITY.md](../security/SECURITY.md), [README.md](../../README.md)
 
 ## Maintenance Schedule
 
-| Task | Frequency | Time |
-|------|-----------|------|
-| Database backup | Daily | 2:00 AM |
-| Log cleanup | Weekly | Sunday 3:00 AM |
-| Database vacuum | Monthly | 1st at 4:00 AM |
-| System updates | Manual | As needed |
+| Task            | Frequency | Time           |
+| --------------- | --------- | -------------- |
+| Database backup | Daily     | 2:00 AM        |
+| Log cleanup     | Weekly    | Sunday 3:00 AM |
+| Database vacuum | Monthly   | 1st at 4:00 AM |
+| System updates  | Manual    | As needed      |
 
 ---
 

@@ -270,6 +270,7 @@ docker logs imperium-iot-node-1 --tail 20 | grep -i "control\|qos"
 ### Panel 1: Node Message Rate (Graph)
 
 **PromQL Query:**
+
 ```promql
 rate(mqtt_messages_published_total[1m])
 ```
@@ -283,6 +284,7 @@ rate(mqtt_messages_published_total[1m])
 ### Panel 2: QoS Level Changes (Stat/Table)
 
 **PromQL Query:**
+
 ```promql
 mqtt_qos_level
 ```
@@ -294,9 +296,10 @@ mqtt_qos_level
 ### Panel 3: Node Priority Heatmap
 
 **PromQL Query:**
+
 ```promql
-node_priority{priority="high"} * 3 or 
-node_priority{priority="normal"} * 2 or 
+node_priority{priority="high"} * 3 or
+node_priority{priority="normal"} * 2 or
 node_priority{priority="low"} * 1
 ```
 
@@ -307,6 +310,7 @@ node_priority{priority="low"} * 1
 ### Panel 4: Bandwidth Usage (Graph)
 
 **PromQL Query:**
+
 ```promql
 rate(node_bytes_sent_total[1m]) / 1024
 ```
@@ -320,6 +324,7 @@ rate(node_bytes_sent_total[1m]) / 1024
 ### Panel 5: Latency Over Time (Graph)
 
 **PromQL Query:**
+
 ```promql
 node_latency_milliseconds
 ```
@@ -333,6 +338,7 @@ node_latency_milliseconds
 ### Panel 6: Intent-to-Enforcement Latency
 
 **PromQL Query:**
+
 ```promql
 intent_enforcement_duration_seconds
 ```
@@ -386,7 +392,7 @@ docker logs -f imperium-iot-node-1 | grep --line-buffered "control\|qos\|config"
 
 ```promql
 # Time from intent submission to policy enforcement
-histogram_quantile(0.95, 
+histogram_quantile(0.95,
   rate(intent_to_enforcement_seconds_bucket[5m])
 )
 ```
@@ -402,7 +408,7 @@ increase(policy_updates_total[5m])
 
 ```promql
 # Nodes exceeding bandwidth limits
-(rate(node_bytes_sent_total[1m]) / 1024) > 
+(rate(node_bytes_sent_total[1m]) / 1024) >
   on(node_id) group_left node_bandwidth_limit_kbps
 ```
 
@@ -430,7 +436,7 @@ Save this as `iot-traffic-dashboard.json` and import via Grafana UI:
         "id": 1,
         "title": "Message Rate by Node",
         "type": "timeseries",
-        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
         "targets": [
           {
             "expr": "rate(mqtt_messages_published_total[1m])",
@@ -442,7 +448,7 @@ Save this as `iot-traffic-dashboard.json` and import via Grafana UI:
         "id": 2,
         "title": "Current QoS Levels",
         "type": "stat",
-        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
         "targets": [
           {
             "expr": "mqtt_qos_level",
@@ -454,7 +460,7 @@ Save this as `iot-traffic-dashboard.json` and import via Grafana UI:
         "id": 3,
         "title": "Bandwidth Usage (KB/s)",
         "type": "timeseries",
-        "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+        "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
         "targets": [
           {
             "expr": "rate(node_bytes_sent_total[1m]) / 1024",
@@ -473,6 +479,7 @@ Save this as `iot-traffic-dashboard.json` and import via Grafana UI:
 ```
 
 Import command:
+
 ```bash
 curl -X POST http://localhost:3000/api/dashboards/import \
     -H "Content-Type: application/json" \
@@ -522,7 +529,7 @@ curl -s http://localhost:8001/metrics | grep mqtt_qos_level
 
 ```bash
 # Check all node QoS levels
-for i in {1..10}; do 
+for i in {1..10}; do
     echo -n "node-$i: "
     curl -s http://localhost:800$i/metrics 2>/dev/null | \
         grep '^mqtt_qos_level' | awk '{print $2}' || echo "N/A"
@@ -570,6 +577,6 @@ demo
 
 ## See Also
 
-- [QUICKSTART.md](../QUICKSTART.md) - Getting started guide
-- [CODEBASE_INDEX.md](../CODEBASE_INDEX.md) - System architecture
-- [SECURITY.md](SECURITY.md) - MQTT TLS setup for production
+- [QUICKSTART.md](../setup/QUICKSTART.md) - Getting started guide
+- [CODEBASE_INDEX.md](../development/CODEBASE_INDEX.md) - System architecture
+- [SECURITY.md](../security/SECURITY.md) - MQTT TLS setup for production

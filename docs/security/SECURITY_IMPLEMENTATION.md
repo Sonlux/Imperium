@@ -468,10 +468,10 @@ For academic projects, the following security practices are now documented:
 ## 🔗 Related Documentation
 
 - [SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md) - Comprehensive pre-deployment checklist
-- [SECURITY.md](docs/SECURITY.md) - General security documentation
-- [DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md) - Backup and recovery procedures
-- [RASPBERRY_PI_SETUP.md](docs/RASPBERRY_PI_SETUP.md) - Production deployment guide
-- [.env.example](.env.example) - Environment variable template
+- [SECURITY.md](SECURITY.md) - General security documentation
+- [DISASTER_RECOVERY.md](../operations/DISASTER_RECOVERY.md) - Backup and recovery procedures
+- [RASPBERRY_PI_SETUP.md](../setup/RASPBERRY_PI_SETUP.md) - Production deployment guide
+- [.env.example](../../.env.example) - Environment variable template
 
 ---
 

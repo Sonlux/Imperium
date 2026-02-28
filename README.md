@@ -417,13 +417,29 @@ Imperium/
 │   └── setup_security.ps1        # Windows security setup
 │
 ├── docs/                         # Documentation
-│   ├── SETUP.md                  # Detailed setup guide
-│   ├── QUICKSTART.md             # Quick start tutorial
-│   ├── PROGRESS.md               # Implementation status report
-│   ├── SECURITY.md               # Security configuration guide
-│   ├── SECURITY_IMPLEMENTATION.md # Security audit summary
-│   ├── DISASTER_RECOVERY.md      # Disaster recovery procedures
-│   └── PRD_CLI_IMPLEMENTATION.md # CLI implementation details
+│   ├── setup/                    # Setup & deployment guides
+│   │   ├── QUICKSTART.md         # Quick start tutorial
+│   │   ├── SETUP.md              # Detailed setup guide
+│   │   ├── RASPBERRY_PI_SETUP.md # Raspberry Pi deployment
+│   │   └── DEPLOYMENT_SUMMARY.md # Deployment summary
+│   ├── security/                 # Security documentation
+│   │   ├── SECURITY.md           # Security configuration guide
+│   │   └── SECURITY_IMPLEMENTATION.md # Security audit summary
+│   ├── esp32/                    # ESP32 hardware node docs
+│   │   ├── ESP32_ADVANCED_CONTROLS.md
+│   │   └── ESP32_INTEGRATION_FINAL.md
+│   ├── demo/                     # Demo guides & verification
+│   │   ├── demo.md               # Demo walkthrough
+│   │   └── DEMO_COMMANDS.md      # Demo command reference
+│   ├── operations/               # Monitoring & recovery
+│   │   ├── DISASTER_RECOVERY.md  # Disaster recovery procedures
+│   │   ├── MONITORING_GUIDE.md   # Monitoring setup guide
+│   │   └── PROMETHEUS_QUERIES.md # Useful PromQL queries
+│   └── development/              # Development tracking
+│       ├── CODEBASE_INDEX.md     # Codebase reference index
+│       ├── PROGRESS.md           # Implementation status
+│       ├── task.md               # Development task tracker
+│       └── PRD_CLI_IMPLEMENTATION.md # CLI implementation details
 │
 ├── docker-compose.yml            # Service orchestration
 ├── Dockerfile.iot-node           # IoT simulator image
@@ -595,10 +611,10 @@ Imperium/
 
 **Documentation**
 
-- ✅ [SETUP.md](SETUP.md) - Detailed setup guide
-- ✅ [QUICKSTART.md](QUICKSTART.md) - Quick start tutorial
-- ✅ [docs/SECURITY.md](docs/SECURITY.md) - Security configuration
-- ✅ [docs/DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md) - Recovery procedures
+- ✅ [SETUP.md](docs/setup/SETUP.md) - Detailed setup guide
+- ✅ [QUICKSTART.md](docs/setup/QUICKSTART.md) - Quick start tutorial
+- ✅ [Security Guide](docs/security/SECURITY.md) - Security configuration
+- ✅ [Disaster Recovery](docs/operations/DISASTER_RECOVERY.md) - Recovery procedures
 
 ---
 
@@ -906,14 +922,14 @@ python scripts/test_api.py
 
 ## 📚 Documentation
 
-| Document                                               | Description                  |
-| ------------------------------------------------------ | ---------------------------- |
-| [SETUP.md](SETUP.md)                                   | Detailed setup instructions  |
-| [QUICKSTART.md](QUICKSTART.md)                         | Quick start tutorial         |
-| [docs/DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md) | Disaster recovery procedures |
-| [docs/SECURITY.md](docs/SECURITY.md)                   | Security configuration guide |
-
-> **Note:** Additional developer documentation (demo guides, deployment notes) available locally after cloning.
+| Category        | Documents                                                                                                                                                       |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Setup**       | [QUICKSTART.md](docs/setup/QUICKSTART.md) · [SETUP.md](docs/setup/SETUP.md) · [Raspberry Pi](docs/setup/RASPBERRY_PI_SETUP.md)                                  |
+| **Security**    | [Security Guide](docs/security/SECURITY.md) · [Implementation](docs/security/SECURITY_IMPLEMENTATION.md)                                                        |
+| **ESP32**       | [Advanced Controls](docs/esp32/ESP32_ADVANCED_CONTROLS.md) · [Integration](docs/esp32/ESP32_INTEGRATION_FINAL.md)                                               |
+| **Operations**  | [Disaster Recovery](docs/operations/DISASTER_RECOVERY.md) · [Monitoring](docs/operations/MONITORING_GUIDE.md) · [PromQL](docs/operations/PROMETHEUS_QUERIES.md) |
+| **Demo**        | [Walkthrough](docs/demo/demo.md) · [Commands](docs/demo/DEMO_COMMANDS.md) · [Quick Ref](docs/demo/DEMO_QUICK_REFERENCE.md)                                      |
+| **Development** | [Codebase Index](docs/development/CODEBASE_INDEX.md) · [Progress](docs/development/PROGRESS.md) · [Tasks](docs/development/task.md)                             |
 
 ---
 
@@ -936,10 +952,9 @@ This project is licensed under the **Apache License 2.0**. See the [LICENSE](LIC
 ## 🔗 Links
 
 - **Repository:** [https://github.com/Sonlux/Imperium](https://github.com/Sonlux/Imperium)
-- **Documentation:** [SETUP.md](SETUP.md), [QUICKSTART.md](QUICKSTART.md), [explanation.md](explanation.md)
-- **Demo Guide:** [demo.md](demo.md)
-- **Viva Q&A:** [VIVA_QA.md](VIVA_QA.md)
-- **Task List:** [task.md](task.md)
+- **Documentation:** [docs/setup/](docs/setup/), [docs/security/](docs/security/), [docs/operations/](docs/operations/)
+- **Demo Guide:** [docs/demo/](docs/demo/)
+- **Task List:** [docs/development/task.md](docs/development/task.md)
 
 ---
 

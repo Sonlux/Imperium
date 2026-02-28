@@ -15,6 +15,7 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
 ## ✅ Completed Tasks
 
 ### Phase 1: System Preparation
+
 - [x] Raspberry Pi accessible via SSH
 - [x] Python 3.13.5 installed
 - [x] Docker 29.1.3 and Docker Compose 5.0.1 installed
@@ -23,6 +24,7 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
 - [x] Network interfaces available (eth0, wlan0)
 
 ### Phase 2: Code Deployment
+
 - [x] Repository cloned to `/home/imperium/Imperium`
 - [x] Python virtual environment created
 - [x] Dependencies installed (Flask, MQTT, SQLAlchemy, JWT, etc.)
@@ -34,6 +36,7 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
   - API rate limiting enabled
 
 ### Phase 3: Service Stack
+
 - [x] Docker Compose services running:
   - **MQTT Broker** (Mosquitto 2.0.22) - Port 1883
   - **Prometheus** - Port 9090
@@ -43,6 +46,7 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
 - [x] All services accessible
 
 ### Phase 4: Database & Authentication
+
 - [x] SQLite database initialized at `data/imperium.db`
 - [x] Database tables created (intents, policies, metrics_history, users)
 - [x] Default admin user created:
@@ -52,6 +56,7 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
 - [x] API rate limiting configured
 
 ### Phase 5: Network Enforcement Testing
+
 - [x] Traffic control (tc) commands tested successfully:
   ```bash
   sudo tc qdisc add dev eth0 root handle 1: htb
@@ -62,6 +67,7 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
 - [x] Clean removal of test rules successful
 
 ### Phase 6: API Testing
+
 - [x] Health endpoint working: `GET /health` → 200 OK
 - [x] Authentication tested: `POST /api/v1/auth/login` → JWT token received
 - [x] Intent submission tested: `POST /api/v1/intents` → Policies generated
@@ -70,13 +76,14 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
   {
     "description": "Prioritize sensor temp-01 and limit bandwidth to 100kbps",
     "policies": [
-      {"policy_type": "traffic_shaping", "rate": "100mbit"},
-      {"policy_type": "routing_priority", "tos": "0x10"}
+      { "policy_type": "traffic_shaping", "rate": "100mbit" },
+      { "policy_type": "routing_priority", "tos": "0x10" }
     ]
   }
   ```
 
 ### Phase 7: Auto-Start Configuration
+
 - [x] Systemd service file created and customized
 - [x] Service installed: `/etc/systemd/system/imperium.service`
 - [x] Service enabled for auto-start on boot
@@ -93,6 +100,7 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
 ## 📊 System Status
 
 ### Running Services
+
 ```
 ✅ Imperium API:       http://10.15.198.192:5000
 ✅ Grafana:            http://10.15.198.192:3000
@@ -102,12 +110,14 @@ Successfully deployed Imperium Intent-Based Networking framework to Raspberry Pi
 ```
 
 ### Network Interfaces
+
 ```
 eth0   - Primary interface for traffic control
 wlan0  - Fallback interface
 ```
 
 ### System Resources
+
 ```
 Platform:     Raspberry Pi 4 (aarch64)
 OS:           Debian GNU/Linux 13 (trixie)
@@ -121,6 +131,7 @@ Docker:       29.1.3
 ## 🧪 Test Results
 
 ### Health Check
+
 ```bash
 $ curl http://localhost:5000/health
 {
@@ -135,6 +146,7 @@ $ curl http://localhost:5000/health
 ```
 
 ### Authentication Flow
+
 ```bash
 # Login
 $ curl -X POST http://localhost:5000/api/v1/auth/login \
@@ -145,6 +157,7 @@ Response: JWT token (24h expiration)
 ```
 
 ### Intent Submission
+
 ```bash
 # Submit intent with authentication
 $ curl -X POST http://localhost:5000/api/v1/intents \
@@ -156,6 +169,7 @@ Response: Intent created with 2 policies (traffic_shaping, routing_priority)
 ```
 
 ### Network Enforcement
+
 ```bash
 # HTB qdisc creation
 $ sudo tc qdisc add dev eth0 root handle 1: htb default 10
@@ -191,6 +205,7 @@ Result: ✅ Successfully applied, verified with tc qdisc show
 ## 📝 Remaining Tasks (20%)
 
 ### Phase 4: IoT Device Integration (prod-7, prod-8)
+
 - [ ] Connect ESP32/physical IoT nodes to network
 - [ ] Configure nodes to connect to Pi's MQTT broker
 - [ ] Test QoS level changes on physical devices
@@ -198,6 +213,7 @@ Result: ✅ Successfully applied, verified with tc qdisc show
 - [ ] Verify device telemetry in Grafana
 
 ### Phase 5: Feedback Loop (prod-9, prod-10)
+
 - [ ] Test closed-loop policy adjustments
 - [ ] Measure convergence time (<2 min target)
 - [ ] Load testing with 50+ nodes
@@ -205,6 +221,7 @@ Result: ✅ Successfully applied, verified with tc qdisc show
 - [ ] Document performance bottlenecks
 
 ### Phase 6: Security Hardening (prod-11)
+
 - [ ] Enable MQTT TLS (port 8883)
 - [ ] Configure firewall rules (ufw)
 - [ ] Change default admin password
@@ -216,6 +233,7 @@ Result: ✅ Successfully applied, verified with tc qdisc show
 ## 🚀 Quick Start Commands
 
 ### Start System
+
 ```bash
 cd /home/imperium/Imperium
 source venv/bin/activate
@@ -231,6 +249,7 @@ sudo systemctl start imperium
 ```
 
 ### Check Status
+
 ```bash
 # Service status
 systemctl status imperium
@@ -246,6 +265,7 @@ journalctl -u imperium -f
 ```
 
 ### Test Network Enforcement
+
 ```bash
 # Check current tc rules
 sudo tc qdisc show dev eth0
@@ -262,12 +282,12 @@ sudo tc qdisc del dev eth0 root
 
 ## 📚 Documentation
 
-- **Main README:** [README.md](README.md)
+- **Main README:** [README.md](../../README.md)
 - **Setup Guide:** [SETUP.md](SETUP.md)
 - **Quick Start:** [QUICKSTART.md](QUICKSTART.md)
-- **Task Tracking:** [task.md](task.md)
-- **Security Guide:** [docs/SECURITY.md](docs/SECURITY.md)
-- **Progress Report:** [PROGRESS.md](PROGRESS.md)
+- **Task Tracking:** [task.md](../development/task.md)
+- **Security Guide:** [SECURITY.md](../security/SECURITY.md)
+- **Progress Report:** [PROGRESS.md](../development/PROGRESS.md)
 
 ---
 

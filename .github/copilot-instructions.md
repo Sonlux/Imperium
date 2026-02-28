@@ -8,7 +8,7 @@ This is an **Intent-Based Networking (IBN) framework** for edge/IoT environments
 
 ## Project Status
 
-⚠️ **Implementation Phase:** Only README and task list exist. All code modules are pending implementation per [task.md](../task.md).
+⚠️ **Implementation Phase:** Only README and task list exist. All code modules are pending implementation per [task.md](../docs/development/task.md).
 
 ## Architecture Components
 
